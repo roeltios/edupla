@@ -1,0 +1,288 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-6">
+    <div class="flex flex-wrap items-end justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-extrabold text-gray-900 sm:text-3xl dark:text-slate-100">Calendario de Proyectos</h1>
+            <p class="mt-2 text-sm text-gray-500 dark:text-slate-400">Visualiza por semana o mes y agenda sesiones de manuales.</p>
+        </div>
+        <div class="flex items-center gap-2">
+            <a href="{{ url_for('main.dashboard', view='week', date=selected_date.isoformat(), manual_id=selected_manual.id if selected_manual else None) }}" class="inline-flex items-center rounded-lg px-3 py-2 text-sm font-semibold transition {{ 'bg-teal-600 text-white' if view_mode == 'week' else 'border border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800' }}">Semana</a>
+            <a href="{{ url_for('main.dashboard', view='month', date=selected_date.isoformat(), manual_id=selected_manual.id if selected_manual else None) }}" class="inline-flex items-center rounded-lg px-3 py-2 text-sm font-semibold transition {{ 'bg-teal-600 text-white' if view_mode == 'month' else 'border border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800' }}">Mes</a>
+            <a href="{{ url_for('main.manuals') }}" class="inline-flex items-center rounded-lg bg-teal-600 px-3 py-2 text-sm font-bold text-white hover:bg-teal-500 transition">Buscar manuales</a>
+        </div>
+    </div>
+
+    <div class="rounded-2xl border border-gray-200 bg-white p-4 dark:bg-slate-900 dark:border-slate-700">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+            {% if view_mode == 'month' %}
+            <a href="{{ url_for('main.dashboard', view='month', date=prev_month_start, manual_id=selected_manual.id if selected_manual else None) }}" class="inline-flex items-center rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">Mes anterior</a>
+            <p class="text-sm font-bold uppercase tracking-[0.18em] text-gray-700 dark:text-slate-200">{{ month_name }}</p>
+            <a href="{{ url_for('main.dashboard', view='month', date=next_month_start, manual_id=selected_manual.id if selected_manual else None) }}" class="inline-flex items-center rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">Mes siguiente</a>
+            {% else %}
+            <a href="{{ url_for('main.dashboard', view='week', week_start=prev_week_start, manual_id=selected_manual.id if selected_manual else None) }}" class="inline-flex items-center rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">Semana anterior</a>
+            <p class="text-sm font-bold uppercase tracking-[0.18em] text-gray-700 dark:text-slate-200">{{ week_start.strftime('%d/%m') }} - {{ week_days[-1].strftime('%d/%m') }}</p>
+            <a href="{{ url_for('main.dashboard', view='week', week_start=next_week_start, manual_id=selected_manual.id if selected_manual else None) }}" class="inline-flex items-center rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">Semana siguiente</a>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if view_mode == 'month' %}
+    <div class="rounded-2xl border border-gray-200 bg-white p-3 dark:bg-slate-900 dark:border-slate-700">
+        <div class="grid grid-cols-7 gap-2 mb-2">
+            {% for label in ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom'] %}
+            <div class="text-center text-xs font-bold uppercase tracking-[0.18em] text-gray-400 dark:text-slate-500">{{ label }}</div>
+            {% endfor %}
+        </div>
+
+        <div class="space-y-2">
+            {% for week in month_calendar %}
+            <div class="grid grid-cols-7 gap-2">
+                {% for day in week %}
+                <section class="min-h-[140px] rounded-xl border border-gray-200 p-2 dark:border-slate-700 {% if day and day == selected_date %}ring-2 ring-teal-500{% endif %}">
+                    {% if day %}
+                    <div class="flex items-center justify-between gap-2">
+                        <p class="text-xs font-bold text-gray-700 dark:text-slate-200">{{ day.strftime('%d/%m') }}</p>
+                        <button type="button" class="open-schedule-modal rounded-md border border-teal-200 bg-teal-50 px-1.5 py-0.5 text-[10px] font-bold text-teal-700 hover:bg-teal-100 dark:border-teal-800 dark:bg-teal-900/30 dark:text-teal-300" data-date="{{ day.isoformat() }}">Agendar</button>
+                    </div>
+                    <div class="mt-2 space-y-1">
+                        {% for schedule in sessions_by_day.get(day, [])[:3] %}
+                        <details class="rounded-md border border-gray-200 bg-gray-50 p-1.5 dark:border-slate-700 dark:bg-slate-800/70">
+                            <summary class="cursor-pointer text-[11px] font-semibold text-gray-700 dark:text-slate-300">
+                                {{ schedule.start_at.strftime('%H:%M') }} {{ schedule.title[:22] }}{% if schedule.title|length > 22 %}...{% endif %}
+                            </summary>
+                            <form method="POST" action="{{ url_for('main.delete_dashboard_session', schedule_id=schedule.id) }}" class="mt-1" onsubmit="return confirm('Eliminar esta sesion calendarizada?');">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <input type="hidden" name="return_view" value="{{ view_mode }}">
+                                <button type="submit" class="w-full rounded bg-red-50 px-2 py-1 text-[11px] font-semibold text-red-700 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-300">Eliminar</button>
+                            </form>
+                        </details>
+                        {% endfor %}
+                        {% if sessions_by_day.get(day, [])|length > 3 %}
+                        <p class="text-[11px] text-gray-400 dark:text-slate-500">+ {{ sessions_by_day.get(day, [])|length - 3 }} más</p>
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <div class="h-full rounded-md bg-gray-50 dark:bg-slate-800/30"></div>
+                    {% endif %}
+                </section>
+                {% endfor %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% else %}
+    <div class="grid grid-cols-1 xl:grid-cols-7 gap-3">
+        {% for day in week_days %}
+        <section class="rounded-2xl border border-gray-200 bg-white p-3 dark:bg-slate-900 dark:border-slate-700">
+            <div class="mb-2 border-b border-gray-100 pb-2 dark:border-slate-800">
+                <div class="flex items-start justify-between gap-2">
+                    <div>
+                        <p class="text-xs uppercase tracking-[0.18em] text-gray-400 dark:text-slate-500">{{ day.strftime('%A') }}</p>
+                        <p class="text-sm font-bold text-gray-900 dark:text-slate-100">{{ day.strftime('%d/%m') }}</p>
+                    </div>
+                    <button type="button" class="open-schedule-modal rounded-md border border-teal-200 bg-teal-50 px-2 py-1 text-[11px] font-bold text-teal-700 hover:bg-teal-100 dark:border-teal-800 dark:bg-teal-900/30 dark:text-teal-300" data-date="{{ day.isoformat() }}">Agendar</button>
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                {% for schedule in sessions_by_day.get(day, []) %}
+                <details class="rounded-xl border border-gray-200 bg-gray-50 p-2 dark:border-slate-700 dark:bg-slate-800/70">
+                    <summary class="cursor-pointer">
+                        <p class="text-xs font-bold text-gray-900 dark:text-slate-100">{{ schedule.start_at.strftime('%H:%M') }} - {{ schedule.end_at.strftime('%H:%M') }}</p>
+                        <p class="text-xs text-gray-700 dark:text-slate-300">{{ schedule.title }}</p>
+                        <p class="text-[11px] text-gray-400 dark:text-slate-500">{{ schedule.manual.grade_level }} · {{ schedule.status|capitalize }}</p>
+                    </summary>
+
+                    <form method="POST" action="{{ url_for('main.update_dashboard_session', schedule_id=schedule.id) }}" class="mt-2 space-y-2">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="return_view" value="{{ view_mode }}">
+
+                        <select name="manual_id" class="w-full rounded border border-gray-300 px-2 py-1 text-xs dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100">
+                            {% for manual in manuals %}
+                            <option value="{{ manual.id }}" {% if manual.id == schedule.manual_id %}selected{% endif %}>{{ manual.title }}</option>
+                            {% endfor %}
+                        </select>
+
+                        <input type="text" name="title" value="{{ schedule.title }}" class="w-full rounded border border-gray-300 px-2 py-1 text-xs dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100">
+                        <input type="datetime-local" name="start_at" value="{{ schedule.start_at.strftime('%Y-%m-%dT%H:%M') }}" class="w-full rounded border border-gray-300 px-2 py-1 text-xs dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100" required>
+
+                        {% set duration = ((schedule.end_at - schedule.start_at).total_seconds() // 60) | int %}
+                        <input type="number" name="duration_minutes" min="30" max="360" value="{{ duration }}" class="w-full rounded border border-gray-300 px-2 py-1 text-xs dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100">
+
+                        <select name="status" class="w-full rounded border border-gray-300 px-2 py-1 text-xs dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100">
+                            {% for status in schedule_statuses %}
+                            <option value="{{ status }}" {% if status == schedule.status %}selected{% endif %}>{{ status|capitalize }}</option>
+                            {% endfor %}
+                        </select>
+
+                        <textarea name="notes" rows="2" class="w-full rounded border border-gray-300 px-2 py-1 text-xs dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100">{{ schedule.notes }}</textarea>
+
+                        <button type="submit" class="w-full rounded-md bg-teal-600 px-2 py-1.5 text-xs font-bold text-white hover:bg-teal-500">Guardar cambios</button>
+                    </form>
+
+                    <form method="POST" action="{{ url_for('main.delete_dashboard_session', schedule_id=schedule.id) }}" class="mt-2" onsubmit="return confirm('Eliminar esta sesion calendarizada?');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="return_view" value="{{ view_mode }}">
+                        <button type="submit" class="w-full rounded-md bg-red-50 px-2 py-1.5 text-xs font-bold text-red-700 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-300">Eliminar sesión</button>
+                    </form>
+                </details>
+                {% else %}
+                <p class="text-xs text-gray-400 dark:text-slate-500">Sin sesiones.</p>
+                {% endfor %}
+            </div>
+        </section>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div id="schedule-modal" class="fixed inset-0 z-50 hidden">
+        <div id="schedule-modal-backdrop" class="absolute inset-0 bg-slate-900/45"></div>
+        <div class="relative z-10 flex min-h-full items-end justify-center p-3 sm:items-center">
+            <div class="w-full max-w-3xl rounded-2xl border border-gray-200 bg-white p-5 shadow-2xl dark:bg-slate-900 dark:border-slate-700">
+                <div class="mb-2 flex items-center justify-between gap-3">
+                    <h2 class="text-sm font-bold uppercase tracking-[0.2em] text-teal-600 dark:text-teal-300">Nueva sesión</h2>
+                    <button id="close-schedule-modal" type="button" class="rounded-md border border-gray-300 px-2 py-1 text-xs font-semibold text-gray-600 hover:bg-gray-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">Cerrar</button>
+                </div>
+                <p id="modal-selected-day" class="mb-3 text-sm font-semibold text-gray-600 dark:text-slate-300"></p>
+
+                <form id="create-session-form" method="POST" action="{{ url_for('main.create_dashboard_session') }}" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="return_view" value="{{ view_mode }}">
+            <input type="hidden" id="start-at-input" name="start_at" required>
+
+            <div class="lg:col-span-2">
+                <label class="text-xs font-semibold text-gray-500 dark:text-slate-400">Manual</label>
+                <select name="manual_id" required class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100">
+                    <option value="">Selecciona un manual</option>
+                    {% for manual in manuals %}
+                    <option value="{{ manual.id }}" {% if selected_manual and selected_manual.id == manual.id %}selected{% endif %}>{{ manual.title }} · {{ manual.grade_level }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label class="text-xs font-semibold text-gray-500 dark:text-slate-400">Fecha (calendario)</label>
+                <input id="start-date-input" type="date" required value="{{ selected_date.isoformat() }}" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100">
+            </div>
+
+            <div>
+                <label class="text-xs font-semibold text-gray-500 dark:text-slate-400">Hora (reloj)</label>
+                <input id="start-time-input" type="time" required value="08:00" step="300" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100">
+            </div>
+
+            <div class="lg:col-span-1">
+                <label class="text-xs font-semibold text-gray-500 dark:text-slate-400">Inicio seleccionado</label>
+                <div id="selected-slot-label" class="mt-1 w-full rounded-lg border border-dashed border-gray-300 bg-gray-50 px-3 py-2 text-sm font-semibold text-gray-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">{{ selected_date.strftime('%d/%m/%Y') }} · 08:00</div>
+            </div>
+
+            <div>
+                <label class="text-xs font-semibold text-gray-500 dark:text-slate-400">Duración (minutos)</label>
+                <input type="number" name="duration_minutes" min="30" max="360" value="120" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100">
+            </div>
+
+            <div>
+                <label class="text-xs font-semibold text-gray-500 dark:text-slate-400">Estado</label>
+                <select name="status" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100">
+                    {% for status in schedule_statuses %}
+                    <option value="{{ status }}" {% if status == 'planned' %}selected{% endif %}>{{ status|capitalize }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="lg:col-span-3">
+                <label class="text-xs font-semibold text-gray-500 dark:text-slate-400">Título visible (opcional)</label>
+                <input type="text" name="title" placeholder="Si se deja vacío, se usa el título del manual" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100">
+            </div>
+
+            <div class="lg:col-span-3">
+                <label class="text-xs font-semibold text-gray-500 dark:text-slate-400">Notas</label>
+                <textarea name="notes" rows="2" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"></textarea>
+            </div>
+
+                    <div class="lg:col-span-3">
+                        <button type="submit" class="w-full rounded-lg bg-teal-600 px-4 py-2 text-sm font-bold text-white hover:bg-teal-500 transition">Guardar sesión en calendario</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        const modal = document.getElementById('schedule-modal');
+        const closeBtn = document.getElementById('close-schedule-modal');
+        const backdrop = document.getElementById('schedule-modal-backdrop');
+        const dayLabel = document.getElementById('modal-selected-day');
+        const openButtons = Array.from(document.querySelectorAll('.open-schedule-modal'));
+        const form = document.getElementById('create-session-form');
+        const startAtInput = document.getElementById('start-at-input');
+        const startDateInput = document.getElementById('start-date-input');
+        const startTimeInput = document.getElementById('start-time-input');
+        const selectedLabel = document.getElementById('selected-slot-label');
+
+        if (!modal || !closeBtn || !backdrop || !dayLabel || openButtons.length === 0 || !form || !startAtInput || !startDateInput || !startTimeInput || !selectedLabel) {
+            return;
+        }
+
+        function closeModal() {
+            modal.classList.add('hidden');
+        }
+
+        function openModalWithDate(dateValue) {
+            startDateInput.value = dateValue;
+            syncStartAt();
+            dayLabel.textContent = 'Agendando para: ' + dateValue.split('-').reverse().join('/');
+            modal.classList.remove('hidden');
+        }
+
+        openButtons.forEach(function (button) {
+            button.addEventListener('click', function () {
+                const dateValue = button.getAttribute('data-date');
+                if (!dateValue) {
+                    return;
+                }
+                openModalWithDate(dateValue);
+            });
+        });
+
+        closeBtn.addEventListener('click', closeModal);
+        backdrop.addEventListener('click', closeModal);
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
+                closeModal();
+            }
+        });
+
+        function syncStartAt() {
+            const date = (startDateInput.value || '').trim();
+            const hour = (startTimeInput.value || '').trim();
+            if (!date || !hour) {
+                startAtInput.value = '';
+                selectedLabel.textContent = 'Selecciona fecha y hora';
+                return;
+            }
+
+            const value = date + 'T' + hour;
+            startAtInput.value = value;
+            const parts = value.split('T');
+            selectedLabel.textContent = parts[0].split('-').reverse().join('/') + ' · ' + parts[1];
+        }
+
+        startDateInput.addEventListener('change', syncStartAt);
+        startTimeInput.addEventListener('change', syncStartAt);
+        syncStartAt();
+
+        form.addEventListener('submit', function (event) {
+            if (startAtInput.value) {
+                return;
+            }
+            event.preventDefault();
+            selectedLabel.textContent = 'Selecciona fecha y hora antes de guardar.';
+            selectedLabel.classList.add('border-red-300', 'text-red-600', 'bg-red-50');
+        });
+    })();
+</script>
+{% endblock %}

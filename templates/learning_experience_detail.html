@@ -1,0 +1,300 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <div class="mb-6">
+        <nav class="flex mb-3 text-sm font-medium text-gray-500 dark:text-slate-400">
+            <a href="{{ url_for('main.index') }}" class="hover:text-teal-600 transition">Experiencias</a>
+            <span class="mx-2">/</span>
+            <span class="text-gray-900 dark:text-slate-100">{{ learning_experience.title }}</span>
+        </nav>
+        <div class="flex flex-wrap items-start justify-between gap-3 mb-3">
+            <h1 class="text-3xl font-black text-gray-900 tracking-tight leading-tight dark:text-slate-100">{{ learning_experience.title }}</h1>
+            <div class="flex items-center gap-2">
+                <a href="{{ url_for('main.export_learning_experience_pdf', experience_id=learning_experience.id) }}" class="inline-flex items-center px-3 py-2 rounded-lg text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition dark:bg-emerald-900 dark:text-emerald-200 dark:hover:bg-emerald-800">Exportar PDF</a>
+                {% if is_admin %}
+                <a href="{{ url_for('main.edit_learning_experience', experience_id=learning_experience.id) }}" class="inline-flex items-center px-3 py-2 rounded-lg text-xs font-bold text-teal-700 bg-teal-50 hover:bg-teal-100 transition dark:bg-teal-900 dark:text-teal-200 dark:hover:bg-teal-800">Editar experiencia</a>
+                <form method="POST" action="{{ url_for('main.delete_learning_experience', experience_id=learning_experience.id) }}" onsubmit="return confirm('Seguro que deseas eliminar esta experiencia?');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="inline-flex items-center px-3 py-2 rounded-lg text-xs font-bold text-red-700 bg-red-50 hover:bg-red-100 transition dark:text-red-200 dark:bg-red-900/40 dark:hover:bg-red-900/60">Eliminar</button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+        <div class="flex flex-wrap items-center gap-3">
+            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-teal-50 text-teal-700 border border-teal-100 dark:bg-teal-900 dark:text-teal-200 dark:border-teal-800">Nivel: {{ learning_experience.level }}</span>
+            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-100 dark:bg-amber-900 dark:text-amber-200 dark:border-amber-800">{{ learning_experience.estimated_duration }}</span>
+            <span class="text-sm text-gray-400 font-medium dark:text-slate-500">Publicado el {{ learning_experience.created_at.strftime('%d %b, %Y') }}</span>
+        </div>
+    </div>
+
+    {% if learning_experience.image_file != 'default.jpg' %}
+    <div class="mb-6 rounded-2xl overflow-hidden shadow-lg ring-1 ring-gray-900/10 dark:ring-slate-700">
+        <img src="{{ url_for('static', filename='uploads/' + learning_experience.image_file) }}" class="w-full h-[280px] object-cover" alt="{{ learning_experience.title }}">
+    </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <div class="xl:col-span-2 space-y-6">
+            <div class="bg-white p-5 sm:p-6 rounded-2xl border border-gray-200 shadow-sm dark:bg-slate-900 dark:border-slate-800">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-5 pb-4 border-b border-gray-100 dark:border-slate-800">
+                    {% if learning_experience.module %}
+                    <div class="md:col-span-2 rounded-xl bg-teal-50 border border-teal-100 p-3 dark:bg-indigo-950 dark:border-teal-900">
+                        <p class="text-xs font-bold uppercase tracking-[0.2em] text-teal-500 mb-2">Ruta de Formacion</p>
+                        <p class="text-sm text-teal-900 dark:text-teal-200">
+                            <a href="{{ url_for('main.course_detail', course_id=learning_experience.module.course.id) }}" class="font-semibold hover:underline">{{ learning_experience.module.course.title }}</a>
+                            · Modulo {{ learning_experience.module.sequence }}: {{ learning_experience.module.title }}
+                        </p>
+                    </div>
+                    {% endif %}
+                    <div>
+                        <p class="text-xs font-bold uppercase tracking-[0.2em] text-gray-400 dark:text-slate-500 mb-1">Perfil Docente</p>
+                        <p class="text-sm text-gray-700 dark:text-slate-300">{{ learning_experience.teacher_profile }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold uppercase tracking-[0.2em] text-gray-400 dark:text-slate-500 mb-1">Enfoque</p>
+                        <p class="text-sm text-gray-700 dark:text-slate-300">{{ learning_experience.course_focus }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold uppercase tracking-[0.2em] text-gray-400 dark:text-slate-500 mb-1">Objetivo de Aprendizaje</p>
+                        <p class="text-sm text-gray-700 dark:text-slate-300">{{ learning_experience.learning_objective or 'Pendiente de definir.' }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold uppercase tracking-[0.2em] text-gray-400 dark:text-slate-500 mb-1">Aplicacion en Aula</p>
+                        <p class="text-sm text-gray-700 dark:text-slate-300">{{ learning_experience.classroom_application or 'Pendiente de definir.' }}</p>
+                    </div>
+                </div>
+                <h2 class="text-xl font-bold text-gray-900 dark:text-slate-100 mb-4 pb-3 border-b border-gray-100 dark:border-slate-800">Guia de Facilitacion</h2>
+                <div class="markdown-content max-w-none">{{ learning_experience.html_content | safe }}</div>
+            </div>
+
+            <div class="bg-white p-5 sm:p-6 rounded-2xl border border-gray-200 shadow-sm dark:bg-slate-900 dark:border-slate-800">
+                <div class="flex items-center justify-between gap-3 mb-4">
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-slate-100">Planeacion Semanal Sugerida</h3>
+                    <span class="text-xs font-bold text-teal-700 bg-teal-50 border border-teal-100 px-2 py-1 rounded-md dark:bg-teal-900 dark:text-teal-200 dark:border-teal-800">Auto-generada</span>
+                </div>
+                <div class="space-y-3">
+                    {% for week in weekly_plan %}
+                    <article class="rounded-xl border border-gray-200 p-4 bg-gray-50 dark:bg-slate-800 dark:border-slate-700">
+                        <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+                            <h4 class="font-bold text-gray-900 dark:text-slate-100">Semana {{ week.week }} · {{ week.title }}</h4>
+                            <span class="text-[11px] font-semibold uppercase tracking-[0.2em] text-gray-500 dark:text-slate-400">{{ learning_experience.level }}</span>
+                        </div>
+                        <p class="text-sm text-gray-700 dark:text-slate-300 mb-2"><strong>Objetivo:</strong> {{ week.objective }}</p>
+                        <ul class="list-disc pl-5 text-sm text-gray-700 dark:text-slate-300 space-y-1">
+                            {% for item in week.activities %}
+                            <li>{{ item }}</li>
+                            {% endfor %}
+                        </ul>
+                        <p class="text-xs text-gray-500 dark:text-slate-400 mt-3"><strong>Evaluacion:</strong> {{ week.assessment_focus }}</p>
+                        <p class="text-xs text-gray-500 dark:text-slate-400"><strong>Producto esperado:</strong> {{ week.expected_product }}</p>
+                    </article>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="bg-gray-900 rounded-2xl p-5 sm:p-6 text-white dark:bg-slate-900 dark:border dark:border-slate-800">
+                <h3 class="text-xl font-bold mb-4">Notas y Retroalimentacion</h3>
+                {% if is_admin %}
+                <form method="POST" class="mb-6">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <textarea name="content" rows="3" class="w-full bg-gray-800 border-gray-700 rounded-2xl p-4 text-white placeholder-gray-500 focus:ring-2 focus:ring-teal-500 focus:border-transparent transition" placeholder="Alguna observacion para mejorar esta experiencia de capacitacion?" required></textarea>
+                    <button type="submit" class="mt-3 px-5 py-2 bg-teal-600 hover:bg-teal-500 rounded-lg text-sm font-bold transition transform active:scale-95">Publicar Comentario</button>
+                </form>
+                {% endif %}
+
+                <div class="space-y-3">
+                    {% for c in comments %}
+                    <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 dark:bg-slate-800 dark:border-slate-700">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="font-bold text-teal-400 text-sm tracking-wide uppercase">{{ c.author }}</span>
+                            <span class="text-xs text-gray-500">{{ c.created_at.strftime('%d %b, %Y') }}</span>
+                        </div>
+                        <p class="text-gray-300 leading-relaxed">{{ c.content }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="space-y-4">
+            <div class="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm dark:bg-slate-900 dark:border-slate-800">
+                <h3 class="text-base font-bold text-gray-900 dark:text-slate-100 mb-4">Recursos Minimos</h3>
+                <ul class="space-y-2">
+                    {% for req in learning_experience.requirements %}
+                    <li class="flex items-center justify-between p-2.5 bg-gray-50 rounded-lg border border-gray-100 dark:bg-slate-800 dark:border-slate-700">
+                        <span class="text-sm font-medium text-gray-700 dark:text-slate-200">{{ req.material.name }}</span>
+                        <span class="px-2 py-0.5 bg-white rounded-md text-xs font-bold text-teal-600 border border-gray-200 dark:bg-slate-900 dark:border-slate-700 dark:text-teal-300">x{{ req.quantity_needed }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                <div class="mt-4 rounded-xl bg-teal-50 border border-teal-100 p-3 dark:bg-indigo-950 dark:border-teal-900">
+                    <p class="text-xs font-bold uppercase tracking-[0.2em] text-teal-500 mb-2">Tecnologia Minima Recomendada</p>
+                    <p class="text-sm text-teal-900 dark:text-teal-200">{{ learning_experience.minimal_technology }}</p>
+                </div>
+            </div>
+
+            <div class="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm dark:bg-slate-900 dark:border-slate-800">
+                <div class="flex items-center justify-between gap-2 mb-3">
+                    <h3 class="text-base font-bold text-gray-900 dark:text-slate-100">Rubrica de Evaluacion</h3>
+                    {% if is_admin %}
+                    <a href="{{ url_for('main.rubric_bank') }}" class="text-xs font-semibold text-teal-600 hover:underline dark:text-teal-300">Ver banco</a>
+                    {% endif %}
+                </div>
+
+                {% if is_admin %}
+                <form method="POST" class="mb-4">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="action" value="add_bank_rubrics">
+                    <p class="text-xs font-semibold text-gray-500 dark:text-slate-400 mb-2">Agregar desde banco</p>
+                    <div class="max-h-36 overflow-auto space-y-2 rounded-lg border border-gray-200 p-2 bg-gray-50 dark:border-slate-700 dark:bg-slate-800">
+                        {% for item in rubric_bank_items %}
+                        <label class="flex items-start gap-2 text-xs text-gray-700 dark:text-slate-300">
+                            <input type="checkbox" name="bank_rubric_ids[]" value="{{ item.id }}" class="mt-0.5 rounded border-gray-300 text-teal-600">
+                            <span><strong>{{ item.name }}</strong> · {{ item.dimension }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                    <button type="submit" class="mt-2 w-full rounded-lg bg-teal-600 text-white text-xs font-bold py-2 hover:bg-teal-500 transition">Agregar seleccion</button>
+                </form>
+
+                <form method="POST" class="space-y-2 mb-4 pt-4 border-t border-gray-100 dark:border-slate-800">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="action" value="add_custom_rubric">
+                    <p class="text-xs font-semibold text-gray-500 dark:text-slate-400">Crear criterio rapido</p>
+                    <input name="rubric_name" placeholder="Nombre del criterio" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-xs dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100">
+                    <div class="grid grid-cols-2 gap-2">
+                        <input name="rubric_dimension" placeholder="Dimension" value="Pedagogia" class="border border-gray-300 rounded-lg px-3 py-2 text-xs dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100">
+                        <input name="rubric_weight" type="number" min="1" max="100" value="20" class="border border-gray-300 rounded-lg px-3 py-2 text-xs dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100">
+                    </div>
+                    <textarea name="rubric_description" rows="2" placeholder="Descripcion" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-xs dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"></textarea>
+                    <textarea name="level_4" rows="1" placeholder="Nivel 4" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-xs dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"></textarea>
+                    <textarea name="level_3" rows="1" placeholder="Nivel 3" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-xs dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"></textarea>
+                    <textarea name="level_2" rows="1" placeholder="Nivel 2" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-xs dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"></textarea>
+                    <textarea name="level_1" rows="1" placeholder="Nivel 1" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-xs dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"></textarea>
+                    <button type="submit" class="w-full rounded-lg bg-slate-900 text-white text-xs font-bold py-2 hover:bg-slate-800 transition dark:bg-teal-700 dark:hover:bg-teal-600">Agregar criterio</button>
+                </form>
+                {% endif %}
+
+                <div class="space-y-2">
+                    {% for rubric in rubrics %}
+                    <div class="rounded-lg border border-gray-200 p-3 bg-gray-50 dark:border-slate-700 dark:bg-slate-800">
+                        <div class="flex items-start justify-between gap-2">
+                            <div>
+                                <p class="text-xs font-bold text-gray-900 dark:text-slate-100">{{ rubric.name }}</p>
+                                <p class="text-[11px] text-gray-500 dark:text-slate-400">{{ rubric.dimension }} · {{ rubric.weight }}%</p>
+                            </div>
+                            {% if is_admin %}
+                            <form method="POST" action="{{ url_for('main.delete_experience_rubric', experience_id=learning_experience.id, rubric_id=rubric.id) }}" onsubmit="return confirm('Eliminar criterio?');">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="text-[11px] font-bold text-red-600 hover:underline dark:text-red-300">Eliminar</button>
+                            </form>
+                            {% endif %}
+                        </div>
+                        {% if is_admin %}
+                        <details class="mt-2">
+                            <summary class="cursor-pointer text-[11px] font-semibold text-teal-600 dark:text-teal-300">Editar criterio</summary>
+                            <form method="POST" action="{{ url_for('main.edit_experience_rubric', experience_id=learning_experience.id, rubric_id=rubric.id) }}" class="mt-2 space-y-2">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <input name="name" value="{{ rubric.name }}" required class="w-full border border-gray-300 rounded-lg px-2 py-1 text-xs dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100">
+                                <div class="grid grid-cols-2 gap-2">
+                                    <input name="dimension" value="{{ rubric.dimension }}" class="border border-gray-300 rounded-lg px-2 py-1 text-xs dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100">
+                                    <input name="weight" type="number" min="1" max="100" value="{{ rubric.weight }}" class="border border-gray-300 rounded-lg px-2 py-1 text-xs dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100">
+                                </div>
+                                <textarea name="description" rows="2" class="w-full border border-gray-300 rounded-lg px-2 py-1 text-xs dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100">{{ rubric.description }}</textarea>
+                                <textarea name="level_4" rows="1" class="w-full border border-gray-300 rounded-lg px-2 py-1 text-xs dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100">{{ rubric.level_4 }}</textarea>
+                                <textarea name="level_3" rows="1" class="w-full border border-gray-300 rounded-lg px-2 py-1 text-xs dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100">{{ rubric.level_3 }}</textarea>
+                                <textarea name="level_2" rows="1" class="w-full border border-gray-300 rounded-lg px-2 py-1 text-xs dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100">{{ rubric.level_2 }}</textarea>
+                                <textarea name="level_1" rows="1" class="w-full border border-gray-300 rounded-lg px-2 py-1 text-xs dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100">{{ rubric.level_1 }}</textarea>
+                                <button type="submit" class="w-full rounded-lg bg-teal-600 text-white text-xs font-bold py-1.5 hover:bg-teal-500 transition">Guardar cambios</button>
+                            </form>
+                        </details>
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <p class="text-xs text-gray-500 dark:text-slate-400">Aun no hay criterios configurados.</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="bg-teal-600 p-4 rounded-2xl text-white shadow-lg shadow-teal-200 dark:bg-teal-900 dark:shadow-none">
+                <h3 class="text-base font-bold mb-4">Estandares ISTE</h3>
+                <div class="flex flex-wrap gap-2">
+                    {% for iste in learning_experience.iste_standards %}
+                    <div class="group relative">
+                        <span class="cursor-help px-2.5 py-0.5 bg-teal-500/30 rounded-lg text-xs font-bold border border-teal-400/50">{{ iste.code }}</span>
+                        <div class="absolute bottom-full mb-2 hidden group-hover:block w-48 p-2 bg-gray-900 text-[10px] rounded-lg shadow-xl">{{ iste.description }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-6 bg-white p-5 sm:p-6 rounded-2xl border border-gray-200 shadow-sm dark:bg-slate-900 dark:border-slate-800">
+        <h3 class="text-xl font-bold text-gray-900 dark:text-slate-100 mb-4">Evaluacion Rapida por Rubrica</h3>
+        {% if rubrics and is_admin %}
+        <form method="POST" class="space-y-4">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="action" value="save_evaluation">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div class="md:col-span-1">
+                    <label class="text-xs font-semibold text-gray-500 dark:text-slate-400">Evaluador</label>
+                    <input name="evaluator_name" class="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100" placeholder="Nombre del docente">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="text-xs font-semibold text-gray-500 dark:text-slate-400">Observaciones</label>
+                    <input name="evaluation_notes" class="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100" placeholder="Fortalezas, areas de mejora, acuerdos">
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                {% for rubric in rubrics %}
+                <div class="rounded-lg border border-gray-200 p-3 dark:border-slate-700">
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+                        <p class="text-sm font-bold text-gray-900 dark:text-slate-100">{{ rubric.name }}</p>
+                        <span class="text-xs text-gray-500 dark:text-slate-400">Peso {{ rubric.weight }}%</span>
+                    </div>
+                    <p class="text-xs text-gray-600 dark:text-slate-400 mb-2">{{ rubric.description }}</p>
+                    <div class="grid grid-cols-4 gap-2 text-xs">
+                        {% for level in [1,2,3,4] %}
+                        <label class="rounded-lg border border-gray-200 p-2 text-center cursor-pointer hover:bg-gray-50 dark:border-slate-700 dark:hover:bg-slate-800">
+                            <input type="radio" name="rubric_level_{{ rubric.id }}" value="{{ level }}" {% if level == 3 %}checked{% endif %} class="mr-1">
+                            Nivel {{ level }}
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <button type="submit" class="rounded-lg bg-teal-600 hover:bg-teal-500 text-white px-4 py-2 text-sm font-bold transition">Guardar evaluacion</button>
+        </form>
+        {% elif not is_admin %}
+        <p class="text-sm text-gray-500 dark:text-slate-400">Vista de solo lectura para rol docente.</p>
+        {% else %}
+        <p class="text-sm text-gray-500 dark:text-slate-400">Agrega criterios en la seccion de Rubrica para habilitar la evaluacion.</p>
+        {% endif %}
+
+        <div class="mt-5 pt-4 border-t border-gray-100 dark:border-slate-800">
+            <h4 class="text-sm font-bold text-gray-900 dark:text-slate-100 mb-2">Ultimas evaluaciones</h4>
+            <div class="space-y-2">
+                {% for evaluation in evaluations %}
+                <div class="rounded-lg border border-gray-200 p-3 bg-gray-50 dark:bg-slate-800 dark:border-slate-700">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <p class="text-sm font-semibold text-gray-800 dark:text-slate-200">{{ evaluation.evaluator_name }}</p>
+                        <span class="text-xs font-bold text-teal-700 bg-teal-50 border border-teal-100 px-2 py-0.5 rounded-md dark:bg-teal-900 dark:text-teal-200 dark:border-teal-800">Promedio ponderado {{ evaluation.weighted_score }}/4</span>
+                    </div>
+                    <p class="text-xs text-gray-500 dark:text-slate-400">{{ evaluation.created_at.strftime('%d %b, %Y') }}</p>
+                    {% if evaluation.notes %}
+                    <p class="text-sm text-gray-700 dark:text-slate-300 mt-1">{{ evaluation.notes }}</p>
+                    {% endif %}
+                </div>
+                {% else %}
+                <p class="text-sm text-gray-500 dark:text-slate-400">Sin evaluaciones registradas por ahora.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

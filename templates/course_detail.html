@@ -1,0 +1,76 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto">
+    <div class="mb-6">
+        <nav class="flex mb-3 text-sm font-medium text-gray-500 dark:text-slate-400">
+            <a href="{{ url_for('main.courses') }}" class="hover:text-teal-600 transition">Cursos</a>
+            <span class="mx-2">/</span>
+            <span class="text-gray-900 dark:text-slate-100">{{ course.title }}</span>
+        </nav>
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+            <h1 class="text-3xl font-black text-gray-900 dark:text-slate-100 tracking-tight">{{ course.title }}</h1>
+            {% if is_admin %}
+            <div class="flex items-center gap-2">
+                <a href="{{ url_for('main.course_studio', course_id=course.id) }}" class="inline-flex items-center px-3 py-2 rounded-lg text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition dark:bg-emerald-900 dark:text-emerald-200 dark:hover:bg-emerald-800">Editor integrado</a>
+                <a href="{{ url_for('main.edit_course', course_id=course.id) }}" class="inline-flex items-center px-3 py-2 rounded-lg text-xs font-bold text-teal-700 bg-teal-50 hover:bg-teal-100 transition dark:bg-teal-900 dark:text-teal-200 dark:hover:bg-teal-800">Editar curso</a>
+                <form method="POST" action="{{ url_for('main.delete_course', course_id=course.id) }}" onsubmit="return confirm('Seguro que deseas eliminar este curso?');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="inline-flex items-center px-3 py-2 rounded-lg text-xs font-bold text-red-700 bg-red-50 hover:bg-red-100 transition dark:text-red-200 dark:bg-red-900/40 dark:hover:bg-red-900/60">Eliminar curso</button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+        <p class="text-sm text-gray-600 dark:text-slate-400 mb-3">{{ course.description or 'Sin descripcion.' }}</p>
+        <div class="text-sm text-gray-500 dark:text-slate-500">
+            <span>{{ course.target_profile or 'Perfil general docente' }}</span>
+            <span class="mx-2">·</span>
+            <span>{{ course.duration }}</span>
+        </div>
+    </div>
+
+    {% if course.viewer_url %}
+    <div class="mb-6 rounded-2xl border border-gray-200 bg-white p-4 dark:bg-slate-900 dark:border-slate-800">
+        <div class="mb-3 flex items-center justify-between gap-3">
+            <h2 class="text-lg font-bold text-gray-900 dark:text-slate-100">Curso embebido</h2>
+            <a href="{{ course.viewer_url }}" target="_blank" rel="noopener noreferrer" class="text-xs font-bold text-teal-600 hover:text-teal-500 dark:text-teal-300">Abrir en pestaña</a>
+        </div>
+        <iframe src="{{ course.viewer_url }}" title="Visor de curso" class="w-full h-[520px] rounded-xl border border-gray-200 dark:border-slate-700" loading="lazy" referrerpolicy="no-referrer"></iframe>
+    </div>
+    {% endif %}
+
+    <div class="space-y-4">
+        {% for module in course.modules|sort(attribute='sequence') %}
+        <div class="bg-white border border-gray-200 rounded-xl p-4 dark:bg-slate-900 dark:border-slate-800">
+            <p class="text-xs font-bold uppercase tracking-[0.2em] text-teal-500 mb-2">Modulo {{ module.sequence }}</p>
+            <h2 class="text-lg font-bold text-gray-900 dark:text-slate-100 mb-3">{{ module.title }}</h2>
+
+            <div class="space-y-2">
+                {% for experience in module.learning_experiences %}
+                <a href="{{ url_for('main.learning_experience_detail', experience_id=experience.id) }}" class="block rounded-lg border border-gray-100 bg-gray-50 px-3 py-2.5 hover:bg-teal-50 hover:border-teal-100 transition dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-slate-700">
+                    <p class="font-semibold text-gray-800 dark:text-slate-100">{{ experience.title }}</p>
+                    <p class="text-sm text-gray-500 dark:text-slate-400">{{ experience.level }} · {{ experience.estimated_duration }}</p>
+                </a>
+                {% else %}
+                <p class="text-sm text-gray-400 dark:text-slate-500">Este modulo aun no tiene experiencias asignadas.</p>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="mt-6">
+        <h2 class="text-xl font-bold text-gray-900 dark:text-slate-100 mb-3">Recursos del Curso</h2>
+        <div class="space-y-2">
+            {% for resource in resources %}
+            <a href="{{ resource.url }}" target="_blank" rel="noopener noreferrer" class="block rounded-lg border border-gray-100 bg-gray-50 px-3 py-2.5 hover:bg-teal-50 hover:border-teal-100 transition dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-slate-700">
+                <p class="font-semibold text-gray-800 dark:text-slate-100">{{ resource.title }}</p>
+                <p class="text-sm text-gray-500 dark:text-slate-400">{{ resource.resource_type|capitalize }}{% if resource.module %} · Modulo {{ resource.module.sequence }}{% endif %}</p>
+            </a>
+            {% else %}
+            <p class="text-sm text-gray-400 dark:text-slate-500">Aun no hay recursos vinculados a este curso.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

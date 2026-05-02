@@ -1,0 +1,61 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto">
+    <div class="mb-5 flex items-end justify-between">
+        <div>
+            <h1 class="text-2xl font-extrabold text-gray-900 sm:text-3xl dark:text-slate-100">Cursos para Formacion Docente</h1>
+            <p class="mt-2 text-sm text-gray-500 dark:text-slate-400">Organiza la capacitacion por rutas, modulos y experiencias didacticas aplicables al aula.</p>
+        </div>
+        {% if is_admin %}
+        <a href="{{ url_for('main.create_course') }}" class="inline-flex items-center px-4 py-2 rounded-xl text-sm font-bold text-white bg-teal-600 hover:bg-teal-700 transition">+ Nuevo Curso</a>
+        {% endif %}
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {% for course in courses %}
+        <div class="rounded-xl border border-gray-200 bg-white p-4 hover:shadow-md transition-shadow dark:bg-slate-900 dark:border-slate-800">
+            <p class="text-xs font-bold uppercase tracking-[0.2em] text-teal-500 mb-2">Ruta Formativa</p>
+            <h2 class="text-lg font-bold text-gray-900 mb-1 dark:text-slate-100">{{ course.title }}</h2>
+            <p class="text-sm text-gray-600 mb-3 dark:text-slate-400">{{ course.description or 'Sin descripcion.' }}</p>
+            <div class="text-xs text-gray-400 dark:text-slate-500 mb-3">
+                <span>{{ course.target_profile or 'Perfil general docente' }}</span>
+                <span class="mx-2">·</span>
+                <span>{{ course.duration }}</span>
+                <span class="mx-2">·</span>
+                <span>{{ course.modules|length }} modulos</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <a href="{{ url_for('main.course_detail', course_id=course.id) }}" class="inline-flex items-center px-3 py-2 rounded-lg text-xs font-bold text-white bg-teal-600 hover:bg-teal-700 transition">Ver</a>
+                {% if is_admin %}
+                <a href="{{ url_for('main.course_studio', course_id=course.id) }}" class="inline-flex items-center px-3 py-2 rounded-lg text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition dark:bg-emerald-900 dark:text-emerald-200 dark:hover:bg-emerald-800">Editor</a>
+                <a href="{{ url_for('main.edit_course', course_id=course.id) }}" class="inline-flex items-center px-3 py-2 rounded-lg text-xs font-bold text-teal-700 bg-teal-50 hover:bg-teal-100 transition dark:bg-teal-900 dark:text-teal-200 dark:hover:bg-teal-800">Editar</a>
+                <form method="POST" action="{{ url_for('main.delete_course', course_id=course.id) }}" onsubmit="return confirm('Seguro que deseas eliminar este curso?');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="inline-flex items-center px-3 py-2 rounded-lg text-xs font-bold text-red-700 bg-red-50 hover:bg-red-100 transition dark:text-red-200 dark:bg-red-900/40 dark:hover:bg-red-900/60">Eliminar</button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+        {% else %}
+        <div class="md:col-span-2 rounded-xl border border-gray-200 bg-white p-4 text-sm text-gray-500 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400">
+            Aun no hay cursos creados.
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if courses_page and courses_page.pages > 1 %}
+    <div class="mt-5 flex items-center justify-between gap-3">
+        <p class="text-xs text-gray-500 dark:text-slate-400">Pagina {{ courses_page.page }} de {{ courses_page.pages }}</p>
+        <div class="flex items-center gap-2">
+            {% if courses_page.has_prev %}
+            <a href="{{ url_for('main.courses', page=courses_page.prev_num) }}" class="inline-flex items-center px-3 py-2 rounded-lg text-xs font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 transition dark:text-slate-100 dark:bg-slate-700 dark:hover:bg-slate-600">Anterior</a>
+            {% endif %}
+            {% if courses_page.has_next %}
+            <a href="{{ url_for('main.courses', page=courses_page.next_num) }}" class="inline-flex items-center px-3 py-2 rounded-lg text-xs font-bold text-white bg-teal-600 hover:bg-teal-700 transition">Siguiente</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,120 @@
+{% extends 'layout.html' %}
+
+{%- set _theme_colors = {
+  'Programacion':       ('bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/40 dark:text-blue-300',     'bg-blue-600 text-white',   'bg-blue-500'),
+  'Ciudadania Digital': ('bg-violet-100 text-violet-700 hover:bg-violet-200 dark:bg-violet-900/40 dark:text-violet-300', 'bg-violet-600 text-white', 'bg-violet-500'),
+  'Robotica':           ('bg-orange-100 text-orange-700 hover:bg-orange-200 dark:bg-orange-900/40 dark:text-orange-300', 'bg-orange-500 text-white', 'bg-orange-500'),
+} -%}
+
+{% block content %}
+<div class="mx-auto max-w-3xl px-4 pt-4 pb-10">
+
+    {# ── Buscador ── #}
+    <form method="GET" action="{{ url_for('main.manuals') }}" id="search-form"
+          class="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900 overflow-hidden">
+        <div class="flex items-center gap-2 px-3 py-2 border-b border-gray-100 dark:border-slate-800">
+            <svg class="h-4 w-4 shrink-0 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0Z"/></svg>
+            <input id="q" name="q" type="text" value="{{ query_text }}" placeholder="Buscar proyectos…" autocomplete="off"
+                   class="w-full border-0 bg-transparent text-sm text-gray-800 placeholder-gray-400 focus:outline-none dark:text-slate-200 dark:placeholder-slate-500">
+            {% if query_text %}
+            <a href="{{ url_for('main.manuals', grade=selected_grade, theme=selected_theme) }}" class="shrink-0 text-gray-300 hover:text-gray-500">
+                <svg class="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
+            </a>
+            {% endif %}
+        </div>
+        <div class="flex items-center divide-x divide-gray-100 dark:divide-slate-800">
+            <div class="flex items-center gap-2 px-3 py-1.5 flex-1">
+                <label for="grade" class="shrink-0 text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-slate-500">Grado</label>
+                <select id="grade" name="grade" onchange="this.form.submit()"
+                        class="w-full border-0 bg-transparent text-xs font-semibold text-gray-700 focus:outline-none dark:text-slate-300">
+                    <option value="all" {% if selected_grade == 'all' %}selected{% endif %}>Todos</option>
+                    {% for grade in grade_levels %}
+                    <option value="{{ grade }}" {% if selected_grade == grade %}selected{% endif %}>{{ grade }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="flex items-center gap-2 px-3 py-1.5 flex-1">
+                <label for="theme" class="shrink-0 text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-slate-500">Tema</label>
+                <select id="theme" name="theme" onchange="this.form.submit()"
+                        class="w-full border-0 bg-transparent text-xs font-semibold text-gray-700 focus:outline-none dark:text-slate-300">
+                    <option value="all" {% if selected_theme == 'all' %}selected{% endif %}>Todos</option>
+                    {% for topic in manual_topics %}
+                    <option value="{{ topic }}" {% if selected_theme == topic %}selected{% endif %}>{{ topic }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% if is_admin %}
+            <a href="{{ url_for('main.create_manual') }}" class="shrink-0 px-3 py-1.5 text-[10px] font-bold text-teal-600 hover:text-teal-800 dark:text-teal-400 whitespace-nowrap">+ Nuevo</a>
+            {% endif %}
+        </div>
+    </form>
+
+    <script>
+    (function(){const i=document.getElementById('q');let t;i.addEventListener('input',function(){clearTimeout(t);t=setTimeout(function(){document.getElementById('search-form').submit();},400);});})();
+    </script>
+
+    {# ── Chips de grado y tema ── #}
+    <div class="mt-3 flex flex-wrap gap-1.5 text-[11px]">
+        <a href="{{ url_for('main.manuals', q=query_text, theme=selected_theme, grade='all') }}" class="rounded-full px-2.5 py-0.5 font-semibold {% if selected_grade == 'all' %}bg-teal-600 text-white{% else %}bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-slate-800 dark:text-slate-400{% endif %}">Todos los grados</a>
+        {% for grade in grade_levels %}
+        <a href="{{ url_for('main.manuals', q=query_text, theme=selected_theme, grade=grade) }}" class="rounded-full px-2.5 py-0.5 font-semibold {% if selected_grade == grade %}bg-teal-600 text-white{% else %}bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-slate-800 dark:text-slate-400{% endif %}">{{ grade }}</a>
+        {% endfor %}
+        <span class="rounded-full px-1 text-gray-200 dark:text-slate-700 select-none">|</span>
+        <a href="{{ url_for('main.manuals', q=query_text, grade=selected_grade, theme='all') }}" class="rounded-full px-2.5 py-0.5 font-semibold {% if selected_theme == 'all' %}bg-gray-700 text-white{% else %}bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-slate-800 dark:text-slate-400{% endif %}">Todos los temas</a>
+        {% for topic in manual_topics %}
+        {%- set _ci, _ca, _dot = _theme_colors.get(topic, ('bg-gray-100 text-gray-500 hover:bg-gray-200', 'bg-gray-700 text-white', 'bg-gray-400')) %}
+        <a href="{{ url_for('main.manuals', q=query_text, grade=selected_grade, theme=topic) }}"
+           class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 font-semibold {{ _ca if selected_theme == topic else _ci }}">
+            <span class="h-1.5 w-1.5 rounded-full {{ 'bg-white opacity-70' if selected_theme == topic else _dot }}"></span>{{ topic }}
+        </a>
+        {% endfor %}
+    </div>
+
+    {# ── Conteo ── #}
+    <p class="mt-3 text-[11px] text-gray-400 dark:text-slate-500">
+        {{ manuals_list|length }} proyecto{{ 's' if manuals_list|length != 1 }}
+        {% if selected_grade != 'all' %}<span class="text-teal-500">· {{ selected_grade }}</span>{% endif %}
+        {% if selected_theme != 'all' %}
+        {%- set _ci2, _ca2, _dot2 = _theme_colors.get(selected_theme, ('','','bg-gray-400')) %}
+        <span class="inline-flex items-center gap-1 {{ _ca2.split()[0] }} {{ _ca2.split()[1] }} rounded-full px-2 py-0.5">
+            <span class="h-1.5 w-1.5 rounded-full bg-white opacity-70"></span>{{ selected_theme }}
+        </span>
+        {% endif %}
+        {% if query_text %}<span class="text-gray-600 dark:text-slate-300">· "{{ query_text }}"</span>{% endif %}
+    </p>
+
+    {# ── Lista ── #}
+    <div class="mt-2 divide-y divide-gray-100 rounded-xl border border-gray-200 bg-white dark:divide-slate-800 dark:border-slate-700 dark:bg-slate-900">
+        {% for manual in manuals_list %}
+        <div class="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 dark:hover:bg-slate-800/50">
+            <a href="{{ url_for('main.manual_detail', manual_id=manual.id) }}" class="min-w-0 flex-1">
+                <div class="flex items-baseline gap-2">
+                    <span class="shrink-0 text-[10px] font-bold uppercase tracking-wide text-teal-500">{{ manual.grade_level }}</span>
+                    <span class="truncate text-sm font-semibold text-gray-900 dark:text-slate-100">{{ manual.title }}</span>
+                </div>
+                {% if manual.description %}
+                <p class="truncate text-[11px] text-gray-400 dark:text-slate-500">{{ manual.description }}</p>
+                {% endif %}
+            </a>
+            <div class="flex shrink-0 items-center gap-1.5 text-[10px]">
+                {% for topic in manual.theme_names %}
+                {%- set _ci3, _ca3, _dot3 = _theme_colors.get(topic, ('bg-gray-100 text-gray-500', '', 'bg-gray-400')) %}
+                <span class="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold {{ _ci3 }}">
+                    <span class="h-1.5 w-1.5 rounded-full {{ _dot3 }}"></span>{{ topic }}
+                </span>
+                {% endfor %}
+                <span class="text-gray-300 dark:text-slate-600">{{ manual.estimated_sessions }}s</span>
+                {% if is_admin %}
+                <a href="{{ url_for('main.edit_manual', manual_id=manual.id) }}" class="ml-1 text-gray-300 hover:text-teal-500 dark:text-slate-600">
+                    <svg class="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Z"/></svg>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% else %}
+        <div class="px-4 py-6 text-center text-sm text-gray-400 dark:text-slate-500">No hay proyectos para este filtro.</div>
+        {% endfor %}
+    </div>
+
+</div>
+{% endblock %}

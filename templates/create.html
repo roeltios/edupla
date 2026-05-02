@@ -1,0 +1,283 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="mb-6">
+        <h1 class="text-3xl font-black text-gray-900 dark:text-slate-100 tracking-tight">{{ form_title }}</h1>
+        <p class="mt-2 text-sm text-gray-500 dark:text-slate-400">{{ form_description }}</p>
+    </div>
+
+    <form method="POST" enctype="multipart/form-data" class="space-y-5">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 sm:p-6 space-y-5 dark:bg-slate-900 dark:border-slate-800">
+            <!-- Información Básica -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div class="md:col-span-2">
+                          <label class="block text-xs font-bold text-gray-700 dark:text-slate-300 mb-2 uppercase tracking-wider">Titulo de la Experiencia</label>
+                    <input type="text" name="title" required
+                              class="w-full bg-gray-50 border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-teal-600 focus:bg-white transition dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
+                           placeholder="Ej: Introduccion a la programacion para docentes de primaria"
+                           value="{{ learning_experience.title if learning_experience else '' }}">
+                </div>
+                <div>
+                          <label class="block text-xs font-bold text-gray-700 dark:text-slate-300 mb-2 uppercase tracking-wider">Nivel Educativo Objetivo</label>
+                          <select name="level" class="w-full bg-gray-50 border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-teal-600 focus:bg-white transition dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100">
+                        <option {% if learning_experience and learning_experience.level == 'Primaria Alta' %}selected{% endif %}>Primaria Alta</option>
+                        <option {% if learning_experience and learning_experience.level == 'Secundaria' %}selected{% endif %}>Secundaria</option>
+                        <option {% if learning_experience and learning_experience.level == 'Preparatoria' %}selected{% endif %}>Preparatoria</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 dark:text-slate-300 mb-2 uppercase tracking-wider">Modulo del Curso</label>
+                    <select name="module_id" class="w-full bg-gray-50 border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-teal-600 focus:bg-white transition dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100">
+                        <option value="">Sin modulo asignado</option>
+                        {% for module in modules %}
+                        <option value="{{ module.id }}" {% if learning_experience and learning_experience.module_id == module.id %}selected{% endif %}>{{ module.course.title }} · M{{ module.sequence }} · {{ module.title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 dark:text-slate-300 mb-2 uppercase tracking-wider">Estado</label>
+                    <select name="workflow_status" class="w-full bg-gray-50 border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-teal-600 focus:bg-white transition dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100">
+                        <option value="draft" {% if workflow_status_value == 'draft' %}selected{% endif %}>Borrador</option>
+                        <option value="review" {% if workflow_status_value == 'review' %}selected{% endif %}>En revision</option>
+                        <option value="published" {% if workflow_status_value == 'published' %}selected{% endif %}>Publicada</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 dark:text-slate-300 mb-2 uppercase tracking-wider">Etapa de Tablero</label>
+                    <select name="board_stage" class="w-full bg-gray-50 border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-teal-600 focus:bg-white transition dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100">
+                        <option value="por_planear" {% if board_stage_value == 'por_planear' %}selected{% endif %}>Por planear</option>
+                        <option value="lista" {% if board_stage_value == 'lista' %}selected{% endif %}>Lista para aplicar</option>
+                        <option value="en_clase" {% if board_stage_value == 'en_clase' %}selected{% endif %}>En clase</option>
+                        <option value="ajustar" {% if board_stage_value == 'ajustar' %}selected{% endif %}>Ajustar</option>
+                        <option value="archivada" {% if board_stage_value == 'archivada' %}selected{% endif %}>Archivada</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 dark:text-slate-300 mb-2 uppercase tracking-wider">Semana</label>
+                    <input type="number" min="1" max="16" name="week_slot" value="{{ week_slot_value }}"
+                           class="w-full bg-gray-50 border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-teal-600 focus:bg-white transition dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 dark:text-slate-300 mb-2 uppercase tracking-wider">Imagen de Referencia</label>
+                    <input type="file" name="image" accept="image/*"
+                           class="w-full text-sm text-gray-500 dark:text-slate-400 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100 transition dark:file:bg-teal-900 dark:file:text-teal-200">
+                    {% if learning_experience and learning_experience.image_file != 'default.jpg' %}
+                    <p class="mt-2 text-xs text-gray-500 dark:text-slate-400">Imagen actual: {{ learning_experience.image_file }}</p>
+                    {% endif %}
+                </div>
+                <div class="md:col-span-2">
+                    <label class="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-slate-300">
+                        <input type="checkbox" name="is_template" {% if is_template_value %}checked{% endif %}
+                               class="rounded border-gray-300 text-teal-600 focus:ring-teal-500">
+                        Guardar como plantilla reutilizable
+                    </label>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 dark:text-slate-300 mb-2 uppercase tracking-wider">Perfil Docente</label>
+                    <input type="text" name="teacher_profile"
+                           class="w-full bg-gray-50 border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-teal-600 focus:bg-white transition dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
+                           placeholder="Ej: Docente normalista sin experiencia previa en programacion"
+                           value="{{ learning_experience.teacher_profile if learning_experience else '' }}">
+                </div>
+                <div>
+                      <label class="block text-xs font-bold text-gray-700 dark:text-slate-300 mb-2 uppercase tracking-wider">Enfoque del Curso</label>
+                    <input type="text" name="course_focus"
+                          class="w-full bg-gray-50 border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-teal-600 focus:bg-white transition dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
+                           placeholder="Ej: Alfabetizacion digital y pensamiento computacional"
+                           value="{{ learning_experience.course_focus if learning_experience else '' }}">
+                </div>
+                <div>
+                      <label class="block text-xs font-bold text-gray-700 dark:text-slate-300 mb-2 uppercase tracking-wider">Tecnologia Minima</label>
+                    <input type="text" name="minimal_technology"
+                          class="w-full bg-gray-50 border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-teal-600 focus:bg-white transition dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
+                           placeholder="Ej: Laptop con navegador y una placa programable compartida"
+                           value="{{ learning_experience.minimal_technology if learning_experience else '' }}">
+                </div>
+                <div>
+                      <label class="block text-xs font-bold text-gray-700 dark:text-slate-300 mb-2 uppercase tracking-wider">Duracion Estimada</label>
+                    <input type="text" name="estimated_duration"
+                          class="w-full bg-gray-50 border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-teal-600 focus:bg-white transition dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
+                           placeholder="Ej: 2 sesiones de 50 minutos"
+                           value="{{ learning_experience.estimated_duration if learning_experience else '' }}">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-bold text-gray-700 dark:text-slate-300 mb-2 uppercase tracking-wider">Objetivo de Aprendizaje</label>
+                    <textarea name="learning_objective" rows="3"
+                              class="w-full bg-gray-50 border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-teal-600 focus:bg-white transition dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
+                              placeholder="Que deberia poder comprender o implementar el docente despues de esta experiencia?">{{ learning_experience.learning_objective if learning_experience else '' }}</textarea>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-bold text-gray-700 dark:text-slate-300 mb-2 uppercase tracking-wider">Aplicacion en Aula</label>
+                    <textarea name="classroom_application" rows="3"
+                              class="w-full bg-gray-50 border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-teal-600 focus:bg-white transition dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
+                              placeholder="Como puede llevarlo a su grupo con pocas barreras tecnicas o de presupuesto?">{{ learning_experience.classroom_application if learning_experience else '' }}</textarea>
+                </div>
+            </div>
+
+            <!-- Estándares ISTE -->
+            <div>
+                <label class="block text-xs font-bold text-gray-700 dark:text-slate-300 mb-3 uppercase tracking-wider">Estándares ISTE Relacionados</label>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {% for iste in iste_list %}
+                    <label class="relative flex items-start p-3 bg-gray-50 rounded-xl border border-gray-200 cursor-pointer hover:bg-teal-50 hover:border-teal-200 transition group dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-slate-700">
+                        <div class="flex items-center h-5">
+                            <input type="checkbox" name="iste_ids" value="{{ iste.id }}" {% if iste.id in selected_iste_ids %}checked{% endif %} class="h-5 w-5 text-teal-600 border-gray-300 rounded-lg focus:ring-teal-500 transition">
+                        </div>
+                        <div class="ml-3 text-sm">
+                            <span class="block font-bold text-gray-900 dark:text-slate-100 group-hover:text-teal-700">{{ iste.code }}</span>
+                            <span class="text-gray-500 dark:text-slate-400 text-xs">{{ iste.description }}</span>
+                        </div>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Materiales -->
+            <div>
+                <label class="block text-xs font-bold text-gray-700 dark:text-slate-300 mb-3 uppercase tracking-wider">Recursos Minimos Necesarios</label>
+                <div id="mat-area" class="space-y-3">
+                    {% for requirement in material_requirements %}
+                    <div class="flex gap-4 items-center animate-in fade-in slide-in-from-left-4">
+                        <input type="text" name="material_names[]" placeholder="Nombre del material" 
+                               value="{{ requirement.name }}"
+                               class="flex-1 bg-gray-50 border-gray-200 rounded-xl p-2.5 focus:ring-2 focus:ring-teal-600 focus:bg-white transition dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100">
+                        <input type="number" name="quantities[]" placeholder="Cant" 
+                               value="{{ requirement.quantity }}"
+                               class="w-24 bg-gray-50 border-gray-200 rounded-xl p-2.5 focus:ring-2 focus:ring-teal-600 focus:bg-white transition dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100">
+                    </div>
+                    {% endfor %}
+                </div>
+                <button type="button" onclick="addM()" 
+                        class="mt-3 inline-flex items-center px-3 py-2 text-xs font-bold text-teal-600 bg-teal-50 rounded-lg hover:bg-teal-100 transition dark:bg-teal-900 dark:text-teal-200 dark:hover:bg-teal-800">
+                    + Anadir otro recurso
+                </button>
+            </div>
+
+            <!-- Planeación Markdown -->
+            <div>
+                <div class="flex justify-between items-end mb-2">
+                    <label class="block text-xs font-bold text-gray-700 dark:text-slate-300 uppercase tracking-wider">Guia de Facilitacion</label>
+                    <span class="text-[10px] text-gray-400 dark:text-slate-500 font-bold uppercase tracking-widest">Soporta Markdown</span>
+                </div>
+                <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                    <div>
+                        <div class="mb-2 flex items-center justify-between gap-3">
+                            <p class="text-xs font-bold uppercase tracking-[0.2em] text-gray-400 dark:text-slate-500">Editor</p>
+                            <div class="flex flex-wrap items-center justify-end gap-1.5 text-[10px] font-bold text-gray-500 dark:text-slate-400">
+                                <button type="button" data-md-snippet="# Titulo\n" class="md-helper-chip rounded-md bg-gray-100 px-2 py-1 hover:bg-gray-200 transition dark:bg-slate-700 dark:hover:bg-slate-600"># titulo</button>
+                                <button type="button" data-md-snippet="## Seccion\n" class="md-helper-chip rounded-md bg-gray-100 px-2 py-1 hover:bg-gray-200 transition dark:bg-slate-700 dark:hover:bg-slate-600">## seccion</button>
+                                <button type="button" data-md-snippet="1. Primer punto\n2. Segundo punto\n" class="md-helper-chip rounded-md bg-gray-100 px-2 py-1 hover:bg-gray-200 transition dark:bg-slate-700 dark:hover:bg-slate-600">1. lista</button>
+                                <button type="button" data-md-snippet="**texto importante**" class="md-helper-chip rounded-md bg-gray-100 px-2 py-1 hover:bg-gray-200 transition dark:bg-slate-700 dark:hover:bg-slate-600">**negrita**</button>
+                                <button type="button" data-md-snippet="[texto del enlace](https://example.com)" class="md-helper-chip rounded-md bg-gray-100 px-2 py-1 hover:bg-gray-200 transition dark:bg-slate-700 dark:hover:bg-slate-600">[link](url)</button>
+                            </div>
+                        </div>
+                        <textarea id="planning-editor" name="planning" rows="12" 
+                                  class="w-full bg-gray-50 border-gray-200 rounded-2xl p-4 font-mono text-sm focus:ring-2 focus:ring-teal-600 focus:bg-white transition dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
+                                  placeholder="# Apertura
+Describe como presentar la actividad al docente...
+
+# Desarrollo
+Explica pasos, preguntas guia y momentos de reflexion...
+
+# Cierre
+Indica como transferirlo al aula.">{{ learning_experience.planning_markdown if learning_experience else '' }}</textarea>
+                    </div>
+                    <div>
+                        <div class="mb-2 flex items-center justify-between gap-3">
+                            <p class="text-xs font-bold uppercase tracking-[0.2em] text-gray-400 dark:text-slate-500">Vista previa</p>
+                            <span class="text-[10px] text-gray-400 dark:text-slate-500">Render cliente</span>
+                        </div>
+                        <div id="planning-preview" class="markdown-content min-h-[326px] rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-slate-700 dark:bg-slate-800"></div>
+                    </div>
+                </div>
+            </div>
+    </div>
+
+        <div class="flex gap-3">
+            <button type="submit" 
+                    class="flex-1 bg-teal-600 text-white font-black py-3.5 rounded-xl shadow-lg shadow-teal-200 hover:bg-teal-700 transition transform hover:-translate-y-0.5 active:scale-95">
+                {{ submit_label }}
+            </button>
+            <a href="{{ cancel_url }}" 
+               class="px-6 bg-white text-gray-500 dark:text-slate-300 font-bold py-3.5 rounded-xl border border-gray-200 hover:bg-gray-50 transition flex items-center dark:bg-slate-900 dark:border-slate-700 dark:hover:bg-slate-800">
+                Cancelar
+            </a>
+        </div>
+    </form>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+<script>
+function addM() {
+    const area = document.getElementById('mat-area');
+    const d = document.createElement('div');
+    d.className = "flex gap-4 items-center animate-in fade-in slide-in-from-left-4";
+    d.innerHTML = `
+        <input type="text" name="material_names[]" placeholder="Nombre del material" 
+             class="flex-1 bg-gray-50 border-gray-200 rounded-xl p-2.5 focus:ring-2 focus:ring-teal-600 focus:bg-white transition dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100">
+        <input type="number" name="quantities[]" placeholder="Cant" 
+             class="w-24 bg-gray-50 border-gray-200 rounded-xl p-2.5 focus:ring-2 focus:ring-teal-600 focus:bg-white transition dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100">
+    `;
+    area.appendChild(d);
+}
+
+(function setupMarkdownPreview() {
+    const editor = document.getElementById('planning-editor');
+    const preview = document.getElementById('planning-preview');
+    const helperChips = Array.from(document.querySelectorAll('.md-helper-chip'));
+    if (!editor || !preview) {
+        return;
+    }
+
+    function insertSnippet(snippet) {
+        const start = editor.selectionStart ?? editor.value.length;
+        const end = editor.selectionEnd ?? editor.value.length;
+        const before = editor.value.slice(0, start);
+        const selected = editor.value.slice(start, end);
+        const after = editor.value.slice(end);
+        const content = snippet.includes('texto importante') && selected
+            ? snippet.replace('texto importante', selected)
+            : snippet.includes('texto del enlace') && selected
+                ? snippet.replace('texto del enlace', selected)
+                : snippet;
+
+        editor.value = before + content + after;
+        const nextCursor = before.length + content.length;
+        editor.focus();
+        editor.setSelectionRange(nextCursor, nextCursor);
+        editor.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+
+    function renderPreview() {
+        const source = editor.value.trim();
+        if (!source) {
+            preview.innerHTML = '<p class="text-sm text-gray-400 dark:text-slate-500">La vista previa aparecera aqui mientras escribes Markdown.</p>';
+            return;
+        }
+
+        if (window.marked && window.DOMPurify) {
+            const rawHtml = window.marked.parse(source, { breaks: true, gfm: true });
+            preview.innerHTML = window.DOMPurify.sanitize(rawHtml);
+            return;
+        }
+
+        preview.textContent = source;
+    }
+
+    helperChips.forEach((chip) => {
+        chip.addEventListener('click', function () {
+            insertSnippet(chip.dataset.mdSnippet || '');
+        });
+    });
+
+    editor.addEventListener('input', renderPreview);
+    renderPreview();
+})();
+</script>
+{% endblock %}

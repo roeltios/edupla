@@ -1,0 +1,204 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="mb-6">
+        <h1 class="text-3xl font-black text-gray-900 dark:text-slate-100 tracking-tight">Editar Curso</h1>
+        <p class="mt-2 text-sm text-gray-500 dark:text-slate-400">Actualiza la ruta formativa, ajusta su perfil objetivo y mejora los modulos existentes.</p>
+    </div>
+
+    <form id="edit-course-form" method="POST" class="space-y-5">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 sm:p-6 space-y-5 dark:bg-slate-900 dark:border-slate-800">
+            <div>
+                <label class="block text-xs font-bold text-gray-700 dark:text-slate-300 mb-2 uppercase tracking-wider">Titulo del Curso</label>
+                <input type="text" name="title" value="{{ course.title }}" required class="w-full bg-gray-50 border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-teal-600 focus:bg-white transition dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-700 dark:text-slate-300 mb-2 uppercase tracking-wider">Perfil Objetivo</label>
+                <input type="text" name="target_profile" value="{{ course.target_profile or '' }}" class="w-full bg-gray-50 border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-teal-600 focus:bg-white transition dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-700 dark:text-slate-300 mb-2 uppercase tracking-wider">Duracion</label>
+                <input type="text" name="duration" value="{{ course.duration or '' }}" class="w-full bg-gray-50 border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-teal-600 focus:bg-white transition dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-700 dark:text-slate-300 mb-2 uppercase tracking-wider">URL para visor embebido (iframe)</label>
+                <input type="url" name="viewer_url" value="{{ course.viewer_url or '' }}" class="w-full bg-gray-50 border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-teal-600 focus:bg-white transition dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-700 dark:text-slate-300 mb-2 uppercase tracking-wider">Descripcion</label>
+                <textarea name="description" rows="4" class="w-full bg-gray-50 border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-teal-600 focus:bg-white transition dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100">{{ course.description or '' }}</textarea>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-700 dark:text-slate-300 mb-2 uppercase tracking-wider">Docentes asignados</label>
+                <select name="teacher_ids[]" multiple class="w-full bg-gray-50 border-gray-200 rounded-xl p-3 min-h-28 focus:ring-2 focus:ring-teal-600 focus:bg-white transition dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100">
+                    {% set teacher_ids = course.teachers | map(attribute='id') | list %}
+                    {% for teacher in teachers %}
+                    <option value="{{ teacher.id }}" {% if teacher.id in teacher_ids %}selected{% endif %}>{{ teacher.full_name }} · {{ teacher.email }}</option>
+                    {% endfor %}
+                </select>
+                <p class="mt-1 text-xs text-gray-500 dark:text-slate-400">Mantener Ctrl/Cmd para seleccionar varios.</p>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-gray-700 dark:text-slate-300 mb-3 uppercase tracking-wider">Modulos Existentes</label>
+                <p class="mb-2 text-xs text-gray-500 dark:text-slate-400">Puedes reordenar con las flechas (arriba/abajo) antes de guardar.</p>
+                <div id="existing-modules-list" class="space-y-3">
+                    {% for module in modules %}
+                    <div class="module-card rounded-xl border border-gray-200 bg-gray-50 p-3 dark:bg-slate-800 dark:border-slate-700">
+                        <input type="hidden" name="existing_module_ids[]" value="{{ module.id }}">
+                        <div class="flex items-center justify-between gap-3 mb-1">
+                            <label class="block text-xs font-bold text-gray-500 dark:text-slate-400">Modulo {{ loop.index }}</label>
+                            <div class="flex items-center gap-2">
+                                <button type="button" class="move-up-btn inline-flex items-center justify-center w-7 h-7 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700" aria-label="Mover modulo arriba">↑</button>
+                                <button type="button" class="move-down-btn inline-flex items-center justify-center w-7 h-7 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700" aria-label="Mover modulo abajo">↓</button>
+                                <label class="inline-flex items-center gap-2 text-xs font-semibold text-red-600 dark:text-red-300">
+                                    <input type="checkbox" name="delete_module_ids[]" value="{{ module.id }}" class="module-delete-checkbox rounded border-gray-300 text-red-600 focus:ring-red-500 dark:border-slate-600 dark:bg-slate-900">
+                                    Eliminar
+                                </label>
+                            </div>
+                        </div>
+                        <input type="text" name="existing_module_titles[]" value="{{ module.title }}" class="module-title-input w-full bg-white border-gray-200 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-600 focus:bg-white transition dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100">
+                        <p class="mt-1 text-xs text-gray-400 dark:text-slate-500">Solo se elimina si no tiene experiencias ni recursos vinculados.</p>
+                    </div>
+                    {% else %}
+                    <p class="text-sm text-gray-500 dark:text-slate-400">Este curso aun no tiene modulos. Puedes agregarlos abajo.</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-gray-700 dark:text-slate-300 mb-3 uppercase tracking-wider">Nuevos Modulos</label>
+                <div id="module-area" class="space-y-3"></div>
+                <button type="button" onclick="addModule()" class="mt-3 inline-flex items-center px-3 py-2 text-xs font-bold text-teal-600 bg-teal-50 rounded-lg hover:bg-teal-100 transition dark:bg-teal-900 dark:text-teal-200 dark:hover:bg-teal-800">+ Anadir modulo</button>
+            </div>
+        </div>
+
+        <div class="flex gap-3">
+            <button type="submit" class="flex-1 bg-teal-600 text-white font-black py-3.5 rounded-xl shadow-lg shadow-teal-200 hover:bg-teal-700 transition">GUARDAR CAMBIOS</button>
+            <a href="{{ url_for('main.course_detail', course_id=course.id) }}" class="px-6 bg-white text-gray-500 dark:text-slate-300 font-bold py-3.5 rounded-xl border border-gray-200 hover:bg-gray-50 transition flex items-center dark:bg-slate-900 dark:border-slate-700 dark:hover:bg-slate-800">Cancelar</a>
+        </div>
+    </form>
+</div>
+
+<script>
+function addModule() {
+    const area = document.getElementById('module-area');
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.name = 'module_titles[]';
+    input.placeholder = 'Nuevo modulo';
+    input.className = 'w-full bg-gray-50 border-gray-200 rounded-xl p-2.5 focus:ring-2 focus:ring-teal-600 focus:bg-white transition dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100';
+    area.appendChild(input);
+}
+
+(function setupDeleteConfirmation() {
+    const form = document.getElementById('edit-course-form');
+    if (!form) {
+        return;
+    }
+
+    const moduleList = document.getElementById('existing-modules-list');
+    const deleteBoxes = Array.from(document.querySelectorAll('.module-delete-checkbox'));
+    const moduleCards = Array.from(document.querySelectorAll('.module-card'));
+
+    function refreshMoveButtons() {
+        if (!moduleList) {
+            return;
+        }
+
+        const cards = Array.from(moduleList.querySelectorAll('.module-card'));
+        cards.forEach((card, index) => {
+            const upBtn = card.querySelector('.move-up-btn');
+            const downBtn = card.querySelector('.move-down-btn');
+            if (upBtn) {
+                upBtn.disabled = index === 0;
+                upBtn.classList.toggle('opacity-50', index === 0);
+            }
+            if (downBtn) {
+                downBtn.disabled = index === cards.length - 1;
+                downBtn.classList.toggle('opacity-50', index === cards.length - 1);
+            }
+
+            const label = card.querySelector('label.block.text-xs.font-bold');
+            if (label) {
+                label.textContent = 'Modulo ' + (index + 1);
+            }
+        });
+    }
+
+    moduleCards.forEach((card) => {
+        const upBtn = card.querySelector('.move-up-btn');
+        const downBtn = card.querySelector('.move-down-btn');
+
+        if (upBtn) {
+            upBtn.addEventListener('click', function () {
+                const previous = card.previousElementSibling;
+                if (previous && moduleList) {
+                    moduleList.insertBefore(card, previous);
+                    refreshMoveButtons();
+                }
+            });
+        }
+
+        if (downBtn) {
+            downBtn.addEventListener('click', function () {
+                const next = card.nextElementSibling;
+                if (next && moduleList) {
+                    moduleList.insertBefore(next, card);
+                    refreshMoveButtons();
+                }
+            });
+        }
+    });
+
+    function syncModuleState() {
+        deleteBoxes.forEach((checkbox) => {
+            const container = checkbox.closest('.rounded-xl');
+            const titleInput = container ? container.querySelector('.module-title-input') : null;
+            if (!container || !titleInput) {
+                return;
+            }
+
+            const removing = checkbox.checked;
+            titleInput.disabled = removing;
+            container.classList.toggle('opacity-60', removing);
+            container.classList.toggle('ring-1', removing);
+            container.classList.toggle('ring-red-400', removing);
+        });
+    }
+
+    deleteBoxes.forEach((checkbox) => {
+        checkbox.addEventListener('change', syncModuleState);
+    });
+
+    form.addEventListener('submit', function (event) {
+        const selected = deleteBoxes.filter((checkbox) => checkbox.checked);
+        if (!selected.length) {
+            return;
+        }
+
+        const moduleNames = selected
+            .map((checkbox) => {
+                const container = checkbox.closest('.rounded-xl');
+                const titleInput = container ? container.querySelector('.module-title-input') : null;
+                return (titleInput && titleInput.value.trim()) || 'Modulo sin titulo';
+            })
+            .join('\n- ');
+
+        const confirmed = window.confirm(
+            'Vas a intentar eliminar ' + selected.length + ' modulo(s):\n- ' + moduleNames +
+            '\n\nSi alguno tiene experiencias o recursos vinculados, no se eliminara y se mostrara un error.\n\nQuieres continuar?'
+        );
+
+        if (!confirmed) {
+            event.preventDefault();
+        }
+    });
+
+    syncModuleState();
+    refreshMoveButtons();
+})();
+</script>
+{% endblock %}

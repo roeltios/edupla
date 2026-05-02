@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edupla - Formacion Docente en Tecnologia Educativa</title>
+    <script>
+        // Enable class-based dark mode before CSS loads to avoid flash.
+        (function () {
+            const saved = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (saved === 'dark' || (!saved && prefersDark)) {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
+    <style type="text/tailwindcss">
+        @custom-variant dark (&:where(.dark, .dark *));
+    </style>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        };
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+
+        .surface-card {
+            transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+        }
+
+        .surface-card:hover {
+            transform: translateY(-1px);
+        }
+
+        .markdown-content {
+            color: rgb(31 41 55);
+            line-height: 1.7;
+        }
+
+        .markdown-content > * + * {
+            margin-top: 0.9rem;
+        }
+
+        .markdown-content h1,
+        .markdown-content h2,
+        .markdown-content h3,
+        .markdown-content h4,
+        .markdown-content h5,
+        .markdown-content h6 {
+            color: rgb(17 24 39);
+            font-weight: 800;
+            line-height: 1.25;
+        }
+
+        .markdown-content h1 {
+            font-size: 1.75rem;
+            margin-top: 0;
+        }
+
+        .markdown-content h2 {
+            font-size: 1.25rem;
+            padding-top: 0.4rem;
+            border-top: 1px solid rgb(229 231 235);
+        }
+
+        .markdown-content h3 {
+            font-size: 1.05rem;
+        }
+
+        .markdown-content p,
+        .markdown-content li {
+            font-size: 1rem;
+        }
+
+        .markdown-content ol,
+        .markdown-content ul {
+            padding-left: 1.5rem;
+        }
+
+        .markdown-content ol {
+            list-style: decimal;
+        }
+
+        .markdown-content ul {
+            list-style: disc;
+        }
+
+        .markdown-content li + li {
+            margin-top: 0.35rem;
+        }
+
+        .markdown-content code {
+            background-color: rgb(243 244 246);
+            color: rgb(55 65 81);
+            border-radius: 0.375rem;
+            padding: 0.1rem 0.35rem;
+            font-size: 0.9em;
+        }
+
+        .markdown-content pre {
+            background-color: rgb(248 250 252);
+            border: 1px solid rgb(229 231 235);
+            border-radius: 0.9rem;
+            padding: 1rem;
+            overflow-x: auto;
+        }
+
+        .markdown-content pre code {
+            background: transparent;
+            padding: 0;
+        }
+
+        .markdown-content a {
+            color: rgb(13 148 136);
+            text-decoration: underline;
+            text-underline-offset: 2px;
+        }
+
+        html.dark .markdown-content {
+            color: rgb(203 213 225);
+        }
+
+        html.dark .markdown-content h1,
+        html.dark .markdown-content h2,
+        html.dark .markdown-content h3,
+        html.dark .markdown-content h4,
+        html.dark .markdown-content h5,
+        html.dark .markdown-content h6 {
+            color: rgb(248 250 252);
+        }
+
+        html.dark .markdown-content h2 {
+            border-top-color: rgb(51 65 85);
+        }
+
+        html.dark .markdown-content code {
+            background-color: rgb(30 41 59);
+            color: rgb(226 232 240);
+        }
+
+        html.dark .markdown-content pre {
+            background-color: rgb(15 23 42);
+            border-color: rgb(51 65 85);
+        }
+
+        html.dark .markdown-content a {
+            color: rgb(94 234 212);
+        }
+
+        /* Fallback dark theme when Tailwind CDN dark variant stays media-based. */
+        html.dark body {
+            background-color: rgb(2 6 23);
+            color: rgb(241 245 249);
+        }
+
+        html.dark .bg-white { background-color: rgb(15 23 42) !important; }
+        html.dark .bg-gray-50 { background-color: rgb(15 23 42) !important; }
+        html.dark .bg-gray-100 { background-color: rgb(30 41 59) !important; }
+
+        html.dark .text-gray-900 { color: rgb(241 245 249) !important; }
+        html.dark .text-gray-700 { color: rgb(226 232 240) !important; }
+        html.dark .text-gray-600 { color: rgb(203 213 225) !important; }
+        html.dark .text-gray-500 { color: rgb(148 163 184) !important; }
+        html.dark .text-gray-400 { color: rgb(100 116 139) !important; }
+
+        html.dark .border-gray-200,
+        html.dark .border-gray-100,
+        html.dark .divide-gray-50,
+        html.dark .divide-gray-100 {
+            border-color: rgb(30 41 59) !important;
+        }
+
+        html.dark .hover\:bg-gray-50:hover,
+        html.dark .hover\:bg-gray-100:hover,
+        html.dark .hover\:bg-gray-50\/80:hover {
+            background-color: rgb(30 41 59) !important;
+        }
+
+        html.dark .surface-card {
+            background: linear-gradient(180deg, rgb(15 23 42) 0%, rgb(12 20 38) 100%);
+            border-color: rgb(71 85 105) !important;
+            box-shadow: 0 8px 20px rgba(2, 6, 23, 0.35), inset 0 1px 0 rgba(148, 163, 184, 0.08);
+        }
+
+        html.dark .surface-card:hover {
+            border-color: rgb(20 184 166) !important;
+            box-shadow: 0 12px 26px rgba(2, 6, 23, 0.5), 0 0 0 1px rgba(20, 184, 166, 0.35);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-900 min-h-screen dark:bg-slate-950 dark:text-slate-100">
+    <nav class="bg-white/95 border-b border-gray-200 sticky top-0 z-50 backdrop-blur dark:bg-slate-900/95 dark:border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-14 items-center">
+                <div class="flex items-center gap-2">
+                    <a href="{{ url_for('main.index') }}" class="flex items-center gap-2">
+                        <span class="text-lg font-bold tracking-tight text-teal-700 dark:text-teal-400">Edupla</span>
+                    </a>
+                </div>
+                <div class="hidden md:flex items-center space-x-2">
+                    {% if current_user %}
+                    <a href="{{ url_for('main.dashboard') }}" class="text-sm font-medium text-gray-600 hover:text-teal-600 transition dark:text-slate-300 dark:hover:text-teal-400">Calendario</a>
+                    <a href="{{ url_for('main.manuals') }}" class="text-sm font-medium text-gray-600 hover:text-teal-600 transition dark:text-slate-300 dark:hover:text-teal-400">Manuales</a>
+                    <a href="{{ url_for('main.rubric_bank') }}" class="text-sm font-medium text-gray-600 hover:text-teal-600 transition dark:text-slate-300 dark:hover:text-teal-400">Rúbricas</a>
+
+                    {% if is_admin %}
+                    <details class="relative nav-dropdown">
+                        <summary class="list-none cursor-pointer rounded-lg border border-gray-200 px-2.5 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-100 transition dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">
+                            Administrar
+                        </summary>
+                        <div class="absolute right-0 mt-2 w-56 rounded-xl border border-gray-200 bg-white shadow-lg p-2 dark:border-slate-700 dark:bg-slate-900">
+                            <a href="{{ url_for('main.dashboard') }}" class="block rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-teal-50 dark:text-slate-200 dark:hover:bg-slate-800">Calendario</a>
+                            <a href="{{ url_for('main.users_admin') }}" class="block rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-teal-50 dark:text-slate-200 dark:hover:bg-slate-800">Usuarios</a>
+                            <a href="{{ url_for('main.rubric_bank') }}" class="block rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-teal-50 dark:text-slate-200 dark:hover:bg-slate-800">Banco de rúbricas</a>
+                            <div class="my-1 border-t border-gray-200 dark:border-slate-700"></div>
+                            <button id="theme-toggle" type="button" class="w-full text-left rounded-lg px-3 py-2 text-sm font-semibold text-teal-700 hover:bg-teal-50 transition dark:text-teal-300 dark:hover:bg-slate-800">Modo</button>
+                        </div>
+                    </details>
+
+                    <details class="relative nav-dropdown">
+                        <summary class="list-none cursor-pointer rounded-lg bg-teal-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-teal-500 transition">
+                            + Nueva
+                        </summary>
+                        <div class="absolute right-0 mt-2 w-56 rounded-xl border border-gray-200 bg-white shadow-lg p-2 dark:border-slate-700 dark:bg-slate-900">
+                            <a href="{{ url_for('main.create_manual') }}" class="block rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-teal-50 dark:text-slate-200 dark:hover:bg-slate-800">Nuevo Manual</a>
+                            <a href="{{ url_for('main.create_rubric_bank_item') }}" class="block rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-teal-50 dark:text-slate-200 dark:hover:bg-slate-800">Nueva Rubrica</a>
+                        </div>
+                    </details>
+                    {% else %}
+                    <button id="theme-toggle" type="button" class="rounded-lg border border-gray-200 px-2.5 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-100 transition dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">Modo</button>
+                    {% endif %}
+
+                    <div class="ml-2 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-600 dark:border-slate-700 dark:text-slate-300">
+                        {{ current_user.full_name }} · {{ 'Admin' if is_admin else 'Docente' }}
+                    </div>
+                    <form method="POST" action="{{ url_for('main.logout') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="rounded-lg bg-gray-900 px-3 py-1.5 text-sm font-semibold text-white hover:bg-gray-800 transition dark:bg-slate-700 dark:hover:bg-slate-600">Salir</button>
+                    </form>
+                    {% else %}
+                    <a href="{{ url_for('main.login') }}" class="rounded-lg bg-teal-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-teal-500 transition">Iniciar sesion</a>
+                    {% endif %}
+                </div>
+
+                <div class="md:hidden flex items-center gap-2">
+                    <button id="mobile-nav-toggle" type="button" aria-expanded="false" aria-controls="mobile-nav-panel" class="inline-flex items-center justify-center rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-100 transition dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
+                        Menu
+                    </button>
+                </div>
+            </div>
+
+            <div id="mobile-nav-panel" class="md:hidden hidden pb-3">
+                <div class="rounded-xl border border-gray-200 bg-white p-2 space-y-1 dark:border-slate-700 dark:bg-slate-900">
+                    {% if current_user %}
+                    <a href="{{ url_for('main.dashboard') }}" class="block rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-teal-50 dark:text-slate-200 dark:hover:bg-slate-800">Calendario</a>
+                    <a href="{{ url_for('main.manuals') }}" class="block rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-teal-50 dark:text-slate-200 dark:hover:bg-slate-800">Manuales</a>
+                    <a href="{{ url_for('main.rubric_bank') }}" class="block rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-teal-50 dark:text-slate-200 dark:hover:bg-slate-800">Rúbricas</a>
+                    {% if is_admin %}
+                    <a href="{{ url_for('main.dashboard') }}" class="block rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-teal-50 dark:text-slate-200 dark:hover:bg-slate-800">Panel</a>
+                    <a href="{{ url_for('main.users_admin') }}" class="block rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-teal-50 dark:text-slate-200 dark:hover:bg-slate-800">Usuarios</a>
+                    {% endif %}
+                    <div class="border-t border-gray-200 my-1 dark:border-slate-700"></div>
+                    <button id="theme-toggle-mobile" type="button" class="w-full text-left rounded-lg px-3 py-2 text-sm font-semibold text-teal-700 hover:bg-teal-50 transition dark:text-teal-300 dark:hover:bg-slate-800">Modo</button>
+                    {% if is_admin %}
+                    <div class="border-t border-gray-200 my-1 dark:border-slate-700"></div>
+                    <a href="{{ url_for('main.create_manual') }}" class="block rounded-lg px-3 py-2 text-sm font-semibold text-teal-700 hover:bg-teal-50 dark:text-teal-300 dark:hover:bg-slate-800">+ Nuevo Manual</a>
+                    <a href="{{ url_for('main.create_rubric_bank_item') }}" class="block rounded-lg px-3 py-2 text-sm font-semibold text-teal-700 hover:bg-teal-50 dark:text-teal-300 dark:hover:bg-slate-800">+ Nueva Rubrica</a>
+                    {% endif %}
+                    <div class="border-t border-gray-200 my-1 dark:border-slate-700"></div>
+                    <form method="POST" action="{{ url_for('main.logout') }}" class="px-1">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="w-full rounded-lg bg-gray-900 px-3 py-2 text-left text-sm font-semibold text-white hover:bg-gray-800 transition dark:bg-slate-700 dark:hover:bg-slate-600">Salir</button>
+                    </form>
+                    {% else %}
+                    <a href="{{ url_for('main.login') }}" class="block rounded-lg px-3 py-2 text-sm font-semibold text-white bg-teal-600 hover:bg-teal-500 transition">Iniciar sesion</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="mb-4 space-y-2">
+                    {% for category, message in messages %}
+                    <div class="rounded-xl border px-3 py-2 text-sm {% if category == 'error' %}border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300{% else %}border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300{% endif %}">
+                        {{ message }}
+                    </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+    </main>
+
+    <script>
+        (function () {
+            const root = document.documentElement;
+            const btn = document.getElementById('theme-toggle');
+            const btnMobile = document.getElementById('theme-toggle-mobile');
+            if (!btn && !btnMobile) {
+                return;
+            }
+
+            function readStoredTheme() {
+                try {
+                    return localStorage.getItem('theme');
+                } catch (e) {
+                    return null;
+                }
+            }
+
+            function writeStoredTheme(theme) {
+                try {
+                    localStorage.setItem('theme', theme);
+                } catch (e) {
+                    // Ignore storage failures (private mode or restricted contexts).
+                }
+            }
+
+            function applyTheme(theme) {
+                const useDark = theme === 'dark';
+                root.classList.toggle('dark', useDark);
+                if (btn) {
+                    btn.textContent = useDark ? 'Cambiar a claro' : 'Cambiar a oscuro';
+                }
+                if (btnMobile) {
+                    btnMobile.textContent = useDark ? 'Cambiar a claro' : 'Cambiar a oscuro';
+                }
+            }
+
+            const stored = readStoredTheme();
+            if (stored === 'dark' || stored === 'light') {
+                applyTheme(stored);
+            } else {
+                applyTheme(root.classList.contains('dark') ? 'dark' : 'light');
+            }
+
+            // Use onclick so repeated script executions do not stack handlers.
+            if (btn) {
+                btn.onclick = function () {
+                    const nextTheme = root.classList.contains('dark') ? 'light' : 'dark';
+                    applyTheme(nextTheme);
+                    writeStoredTheme(nextTheme);
+                };
+            }
+
+            if (btnMobile) {
+                btnMobile.onclick = function () {
+                    const nextTheme = root.classList.contains('dark') ? 'light' : 'dark';
+                    applyTheme(nextTheme);
+                    writeStoredTheme(nextTheme);
+                };
+            }
+
+            const mobileToggle = document.getElementById('mobile-nav-toggle');
+            const mobilePanel = document.getElementById('mobile-nav-panel');
+            if (mobileToggle && mobilePanel) {
+                mobileToggle.onclick = function () {
+                    const isHidden = mobilePanel.classList.contains('hidden');
+                    mobilePanel.classList.toggle('hidden', !isHidden);
+                    mobileToggle.setAttribute('aria-expanded', String(isHidden));
+                };
+            }
+
+            const navDropdowns = Array.from(document.querySelectorAll('.nav-dropdown'));
+            navDropdowns.forEach((dropdown) => {
+                dropdown.addEventListener('toggle', function () {
+                    if (!dropdown.open) {
+                        return;
+                    }
+                    navDropdowns.forEach((other) => {
+                        if (other !== dropdown) {
+                            other.removeAttribute('open');
+                        }
+                    });
+                });
+            });
+
+            document.addEventListener('click', function (event) {
+                navDropdowns.forEach((dropdown) => {
+                    if (!dropdown.contains(event.target)) {
+                        dropdown.removeAttribute('open');
+                    }
+                });
+            });
+
+            document.addEventListener('keydown', function (event) {
+                if (event.key !== 'Escape') {
+                    return;
+                }
+                navDropdowns.forEach((dropdown) => dropdown.removeAttribute('open'));
+                if (mobilePanel) {
+                    mobilePanel.classList.add('hidden');
+                }
+                if (mobileToggle) {
+                    mobileToggle.setAttribute('aria-expanded', 'false');
+                }
+            });
+        })();
+    </script>
+</body>
+</html>
