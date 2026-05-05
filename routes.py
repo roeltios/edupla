@@ -11,6 +11,7 @@ from flask import Blueprint, abort, current_app, flash, g, redirect, render_temp
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from sqlalchemy import inspect
+from sqlalchemy.exc import IntegrityError
 from werkzeug.utils import secure_filename
 
 from extensions import db
@@ -33,6 +34,7 @@ from models import (
     ManualSessionPlan,
     Material,
     ProjectManual,
+    ProjectManualResource,
     RubricBankItem,
     Resource,
     User,
@@ -529,6 +531,49 @@ def _delete_uploaded_image(filename):
         os.remove(file_path)
 
 
+def _sync_manual_themes(manual, selected_topics):
+    desired = list(dict.fromkeys(selected_topics))
+    existing_by_theme = {theme.theme: theme for theme in manual.themes}
+
+    for theme in list(manual.themes):
+        if theme.theme not in desired:
+            manual.themes.remove(theme)
+
+    for topic in desired:
+        if topic not in existing_by_theme:
+            manual.themes.append(ProjectManualTheme(theme=topic))
+
+
+def _parse_manual_resources_from_form():
+    titles = request.form.getlist('resource_titles[]')
+    urls = request.form.getlist('resource_urls[]')
+    descriptions = request.form.getlist('resource_descriptions[]')
+
+    resources = []
+    for index, (title, url, description) in enumerate(zip(titles, urls, descriptions), start=1):
+        clean_title = (title or '').strip()
+        clean_url = (url or '').strip()
+        clean_description = (description or '').strip()
+
+        if not clean_title and not clean_url and not clean_description:
+            continue
+        if not clean_title:
+            abort(400, description='Cada recurso debe tener un titulo.')
+        if clean_url and not re.match(r'^https?://', clean_url, re.IGNORECASE):
+            abort(400, description='Las URLs de recursos deben iniciar con http:// o https://.')
+
+        resources.append(
+            ProjectManualResource(
+                title=clean_title,
+                url=clean_url or None,
+                description=clean_description or None,
+                position=index,
+            )
+        )
+
+    return resources
+
+
 def _apply_learning_experience_form(learning_experience):
     learning_experience.title = (request.form.get('title') or '').strip()
     if not learning_experience.title:
@@ -734,9 +779,9 @@ def move_board_card():
 @login_required
 def dashboard():
     today = date.today()
-    view_mode = (request.args.get('view') or 'week').strip().lower()
+    view_mode = (request.args.get('view') or 'month').strip().lower()
     if view_mode not in {'week', 'month'}:
-        view_mode = 'week'
+        view_mode = 'month'
 
     selected_date = _parse_date_arg(request.args.get('date'), today)
     week_start = _normalize_week_start(_parse_date_arg(request.args.get('week_start'), selected_date))
@@ -777,6 +822,38 @@ def dashboard():
     selected_manual = db.session.get(ProjectManual, selected_manual_id) if selected_manual_id else None
     manuals = ProjectManual.query.order_by(ProjectManual.grade_level.asc(), ProjectManual.title.asc()).all()
 
+    all_session_plans = ManualSessionPlan.query.order_by(
+        ManualSessionPlan.manual_id.asc(), ManualSessionPlan.session_number.asc()
+    ).all()
+    import json as _json
+    session_plans_json = _json.dumps({
+        str(m.id): [
+            {'id': sp.id, 'session_number': sp.session_number, 'objective': sp.objective, 'topic': sp.topic or ''}
+            for sp in all_session_plans if sp.manual_id == m.id
+        ]
+        for m in manuals
+    })
+
+    day_sessions_json = _json.dumps({
+        d.isoformat(): [
+            {
+                'id': s.id,
+                'manual_id': s.manual_id,
+                'start_at': s.start_at.strftime('%Y-%m-%dT%H:%M'),
+                'start': s.start_at.strftime('%H:%M'),
+                'end': s.end_at.strftime('%H:%M'),
+                'duration_minutes': int((s.end_at - s.start_at).total_seconds() // 60),
+                'title': s.title,
+                'notes': s.notes or '',
+                'status_raw': s.status or 'planned',
+                'status': (s.status or 'planned').capitalize(),
+                'grade_level': s.manual.grade_level if s.manual else '',
+            }
+            for s in sessions
+        ]
+        for d, sessions in sessions_by_day.items()
+    })
+
     prev_month = (month_start - timedelta(days=1)).replace(day=1)
     next_month = month_end
 
@@ -797,6 +874,8 @@ def dashboard():
         manuals=manuals,
         sessions_by_day=sessions_by_day,
         schedule_statuses=sorted(SCHEDULE_STATUSES),
+        session_plans_json=session_plans_json,
+        day_sessions_json=day_sessions_json,
     )
 
 
@@ -806,7 +885,7 @@ def create_dashboard_session():
     manual_id = request.form.get('manual_id', type=int)
     manual = db.session.get(ProjectManual, manual_id)
     if manual is None:
-        abort(400, description='Selecciona un manual valido para calendarizar.')
+        abort(400, description='Selecciona un proyecto valido para calendarizar.')
 
     start_at = _parse_local_datetime_arg(request.form.get('start_at'))
     if start_at is None:
@@ -851,7 +930,7 @@ def update_dashboard_session(schedule_id):
     manual_id = request.form.get('manual_id', type=int)
     manual = db.session.get(ProjectManual, manual_id)
     if manual is None:
-        abort(400, description='Selecciona un manual valido para la sesion.')
+        abort(400, description='Selecciona un proyecto valido para la sesion.')
 
     start_at = _parse_local_datetime_arg(request.form.get('start_at'))
     if start_at is None:
@@ -1103,9 +1182,9 @@ def course_studio(course_id):
         if action == 'create_resource':
             title = (request.form.get('title') or '').strip()
             url = (request.form.get('url') or '').strip()
-            if not title or not url:
-                abort(400, description='Titulo y URL del recurso son obligatorios.')
-            if not re.match(r'^https?://', url, re.IGNORECASE):
+            if not title:
+                abort(400, description='El titulo del recurso es obligatorio.')
+            if url and not re.match(r'^https?://', url, re.IGNORECASE):
                 abort(400, description='La URL del recurso debe iniciar con http:// o https://.')
 
             module_id = request.form.get('module_id', type=int)
@@ -1115,7 +1194,7 @@ def course_studio(course_id):
                 title=title,
                 resource_type=(request.form.get('resource_type') or 'document').strip(),
                 description=(request.form.get('description') or '').strip(),
-                url=url,
+                url=url or '',
                 course_id=course.id,
                 module_id=module.id if module else None,
             )
@@ -1259,14 +1338,16 @@ def create_resource():
     if request.method == 'POST':
         title = (request.form.get('title') or '').strip()
         url = (request.form.get('url') or '').strip()
-        if not title or not url:
-            abort(400, description='Titulo y enlace del recurso son obligatorios.')
+        if not title:
+            abort(400, description='El titulo del recurso es obligatorio.')
+        if url and not re.match(r'^https?://', url, re.IGNORECASE):
+            abort(400, description='El enlace del recurso debe iniciar con http:// o https://.')
 
         resource = Resource(
             title=title,
             resource_type=(request.form.get('resource_type') or 'document').strip(),
             description=(request.form.get('description') or '').strip(),
-            url=url,
+            url=url or '',
             course_id=int(request.form['course_id']) if request.form.get('course_id') else None,
             module_id=int(request.form['module_id']) if request.form.get('module_id') else None,
         )
@@ -1288,13 +1369,15 @@ def edit_resource(resource_id):
     if request.method == 'POST':
         title = (request.form.get('title') or '').strip()
         url = (request.form.get('url') or '').strip()
-        if not title or not url:
-            abort(400, description='Titulo y enlace del recurso son obligatorios.')
+        if not title:
+            abort(400, description='El titulo del recurso es obligatorio.')
+        if url and not re.match(r'^https?://', url, re.IGNORECASE):
+            abort(400, description='El enlace del recurso debe iniciar con http:// o https://.')
 
         resource.title = title
         resource.resource_type = (request.form.get('resource_type') or 'document').strip()
         resource.description = (request.form.get('description') or '').strip()
-        resource.url = url
+        resource.url = url or ''
         resource.course_id = int(request.form['course_id']) if request.form.get('course_id') else None
         resource.module_id = int(request.form['module_id']) if request.form.get('module_id') else None
 
@@ -1510,7 +1593,7 @@ def export_learning_experience_pdf(experience_id):
 
 
 @main_bp.route('/rubrics/bank', methods=['GET'])
-@admin_required
+@login_required
 def rubric_bank():
     seed_rubric_bank_items()
 
@@ -1716,7 +1799,7 @@ def inventory():
 
 
 # ---------------------------------------------------------------------------
-# Manuales de Proyectos
+# Proyectos
 # ---------------------------------------------------------------------------
 
 @main_bp.route('/manuals')
@@ -1767,18 +1850,28 @@ def create_manual():
         if not title or grade_level not in GRADE_LEVELS:
             abort(400, description='Título y grado son obligatorios.')
         if not selected_topics:
-            abort(400, description='Selecciona al menos un tema para el manual.')
+            abort(400, description='Selecciona al menos un tema para el proyecto.')
+        try:
+            estimated_sessions = int(request.form.get('estimated_sessions') or 4)
+        except (TypeError, ValueError):
+            abort(400, description='Sesiones estimadas debe ser un numero valido.')
+
         manual = ProjectManual(
             title=title,
             grade_level=grade_level,
             description=request.form.get('description', '').strip(),
-            iframe_url=request.form.get('iframe_url', '').strip() or None,
             content_markdown=request.form.get('content_markdown', '').strip() or None,
-            estimated_sessions=int(request.form.get('estimated_sessions') or 4),
+            estimated_sessions=max(1, min(200, estimated_sessions)),
         )
-        manual.themes = [ProjectManualTheme(theme=topic) for topic in dict.fromkeys(selected_topics)]
+        _sync_manual_themes(manual, selected_topics)
+        manual.resources = _parse_manual_resources_from_form()
         db.session.add(manual)
-        db.session.commit()
+        try:
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+            flash('No se pudo guardar el proyecto por un conflicto de temas. Intenta de nuevo.', 'error')
+            return render_template('manual_form.html', manual=manual, grade_levels=GRADE_LEVELS, manual_topics=MANUAL_TOPICS)
         return redirect(url_for('main.manual_detail', manual_id=manual.id))
     return render_template('manual_form.html', manual=None, grade_levels=GRADE_LEVELS, manual_topics=MANUAL_TOPICS)
 
@@ -1790,6 +1883,10 @@ def manual_detail(manual_id):
     current = g.current_user
     my_plan = WeeklyPlan.query.filter_by(manual_id=manual_id, user_id=current.id).first()
     rubric_bank_items = RubricBankItem.query.order_by(RubricBankItem.name).all()
+    rubric_groups = {}
+    for item in rubric_bank_items:
+        group_name = (item.dimension or 'Sin categoria').strip() or 'Sin categoria'
+        rubric_groups.setdefault(group_name, []).append(item)
     session_rows = ManualSessionPlan.query.filter_by(manual_id=manual_id).order_by(ManualSessionPlan.session_number.asc()).all()
     scheduled_query = ProjectManualSchedule.query.filter_by(manual_id=manual_id)
     if _is_teacher():
@@ -1806,6 +1903,7 @@ def manual_detail(manual_id):
         manual=manual,
         my_plan=my_plan,
         rubric_bank_items=rubric_bank_items,
+        rubric_groups=rubric_groups,
         session_rows=session_rows,
         upcoming_scheduled_sessions=upcoming_scheduled_sessions,
     )
@@ -1830,15 +1928,25 @@ def edit_manual(manual_id):
         if not title or grade_level not in GRADE_LEVELS:
             abort(400, description='Título y grado son obligatorios.')
         if not selected_topics:
-            abort(400, description='Selecciona al menos un tema para el manual.')
+            abort(400, description='Selecciona al menos un tema para el proyecto.')
+        try:
+            estimated_sessions = int(request.form.get('estimated_sessions') or 4)
+        except (TypeError, ValueError):
+            abort(400, description='Sesiones estimadas debe ser un numero valido.')
+
         manual.title = title
         manual.grade_level = grade_level
         manual.description = request.form.get('description', '').strip()
-        manual.iframe_url = request.form.get('iframe_url', '').strip() or None
         manual.content_markdown = request.form.get('content_markdown', '').strip() or None
-        manual.estimated_sessions = int(request.form.get('estimated_sessions') or 4)
-        manual.themes = [ProjectManualTheme(theme=topic) for topic in dict.fromkeys(selected_topics)]
-        db.session.commit()
+        manual.estimated_sessions = max(1, min(200, estimated_sessions))
+        _sync_manual_themes(manual, selected_topics)
+        manual.resources = _parse_manual_resources_from_form()
+        try:
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+            flash('No se pudo actualizar el proyecto por un conflicto de temas. Intenta de nuevo.', 'error')
+            return render_template('manual_form.html', manual=manual, grade_levels=GRADE_LEVELS, manual_topics=MANUAL_TOPICS)
         return redirect(url_for('main.manual_detail', manual_id=manual.id))
     return render_template('manual_form.html', manual=manual, grade_levels=GRADE_LEVELS, manual_topics=MANUAL_TOPICS)
 
@@ -1852,7 +1960,7 @@ def delete_manual(manual_id):
     return redirect(url_for('main.manuals'))
 
 
-# Rúbricas del manual
+# Rúbricas del proyecto
 @main_bp.route('/manuals/<int:manual_id>/rubrics/create', methods=['POST'])
 @admin_required
 def create_manual_rubric(manual_id):
@@ -1860,13 +1968,45 @@ def create_manual_rubric(manual_id):
     name = request.form.get('name', '').strip()
     if not name:
         abort(400, description='El nombre de la rubrica es obligatorio.')
+
+    selected_group = (request.form.get('bank_rubric_dimension') or '').strip()
     rubric = ProjectRubric(
         manual_id=manual.id,
         name=name,
         description=request.form.get('description', '').strip(),
     )
     db.session.add(rubric)
+    db.session.flush()
+
+    if selected_group:
+        bank_items = (
+            RubricBankItem.query
+            .filter(RubricBankItem.dimension == selected_group)
+            .order_by(RubricBankItem.name.asc())
+            .all()
+        )
+    else:
+        bank_items = []
+
+    for item in bank_items:
+        db.session.add(
+            ProjectRubricCriterion(
+                rubric_id=rubric.id,
+                bank_item_id=item.id,
+                name=item.name,
+                dimension=item.dimension,
+                description=item.description,
+                weight=item.default_weight,
+                level_4=item.level_4,
+                level_3=item.level_3,
+                level_2=item.level_2,
+                level_1=item.level_1,
+            )
+        )
+
     db.session.commit()
+    if selected_group:
+        flash(f'Rubrica creada desde el banco ({selected_group}) con {len(bank_items)} criterios.', 'success')
     return redirect(url_for('main.manual_detail', manual_id=manual_id))
 
 
@@ -1984,6 +2124,28 @@ def add_manual_session_plan_row(manual_id):
         resources=request.form.get('resources', '').strip(),
     )
     db.session.add(row)
+    db.session.commit()
+    return redirect(url_for('main.manual_detail', manual_id=manual_id))
+
+
+@main_bp.route('/manuals/<int:manual_id>/session-plan/<int:row_id>/edit', methods=['POST'])
+@admin_required
+def edit_manual_session_plan_row(manual_id, row_id):
+    row = ManualSessionPlan.query.filter_by(id=row_id, manual_id=manual_id).first_or_404()
+    session_number = int(request.form.get('session_number') or row.session_number)
+    if session_number <= 0:
+        abort(400, description='La sesion debe ser mayor a cero.')
+    objective = request.form.get('objective', '').strip()
+    if not objective:
+        abort(400, description='El objetivo de la sesion es obligatorio.')
+    row.level = request.form.get('level', '').strip() or row.level
+    row.session_number = session_number
+    row.objective = objective
+    row.steam_area_focus = request.form.get('steam_area_focus', '').strip()
+    row.transversality = request.form.get('transversality', '').strip()
+    row.topic = request.form.get('topic', '').strip()
+    row.activity_detail = request.form.get('activity_detail', '').strip()
+    row.resources = request.form.get('resources', '').strip()
     db.session.commit()
     return redirect(url_for('main.manual_detail', manual_id=manual_id))
 

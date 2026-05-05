@@ -1,10 +1,10 @@
 {% extends 'layout.html' %}
 
 {% block content %}
-<div class="max-w-2xl mx-auto">
+<div class="max-w-3xl mx-auto">
     <div class="mb-5">
         <h1 class="text-2xl font-extrabold text-gray-900 dark:text-slate-100">
-            {{ 'Editar manual' if manual else 'Nuevo manual de proyecto' }}
+            {{ 'Editar proyecto' if manual else 'Nuevo proyecto' }}
         </h1>
     </div>
 
@@ -59,16 +59,61 @@
         <hr class="border-gray-200 dark:border-slate-700">
 
         <div>
-            <label class="block text-xs font-semibold text-gray-600 dark:text-slate-400 mb-1">URL del manual externo (para iframe)</label>
-            <input type="url" name="iframe_url"
-                   value="{{ manual.iframe_url if manual else '' }}"
-                   class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:bg-slate-800 dark:border-slate-600 dark:text-slate-100"
-                   placeholder="https://docs.google.com/...">
-            <p class="mt-1 text-xs text-gray-400 dark:text-slate-500">Pega la URL de un Google Doc, Canva, PDF u otro documento que permita inserción.</p>
+            <div class="mb-2 flex items-center justify-between gap-2">
+                <label class="block text-xs font-semibold text-gray-600 dark:text-slate-400">Recursos del proyecto</label>
+                <button type="button" id="add-manual-resource" class="rounded-md bg-teal-50 px-2 py-1 text-[10px] font-bold text-teal-700 hover:bg-teal-100 dark:bg-teal-900 dark:text-teal-200">+ Agregar recurso</button>
+            </div>
+            {% set manual_resources = manual.resources if manual and manual.resources else [] %}
+            <div id="manual-resources-list" class="space-y-2">
+                {% if manual_resources %}
+                {% for resource in manual_resources %}
+                <div class="manual-resource-row rounded-lg border border-gray-200 p-3 dark:border-slate-700">
+                    <input type="hidden" name="resource_titles[]" class="resource-title-value" value="{{ resource.title }}">
+                    <input type="hidden" name="resource_urls[]" class="resource-url-value" value="{{ resource.url or '' }}">
+                    <input type="hidden" name="resource_descriptions[]" class="resource-description-value" value="{{ resource.description or '' }}">
+
+                    <div class="resource-summary space-y-2">
+                        <p class="resource-title-text text-sm font-semibold text-gray-800 dark:text-slate-100">{{ resource.title }}</p>
+                        {% if resource.url %}
+                        <a href="{{ resource.url }}" target="_blank" rel="noopener noreferrer" class="resource-url-link block text-xs text-teal-600 hover:underline dark:text-teal-300">{{ resource.url }}</a>
+                        {% else %}
+                        <p class="resource-url-empty text-xs text-gray-400 dark:text-slate-500">Sin URL</p>
+                        {% endif %}
+                        {% if resource.description %}
+                        <p class="resource-description-text text-xs text-gray-500 dark:text-slate-400">{{ resource.description }}</p>
+                        {% endif %}
+                        <div class="flex items-center gap-2">
+                            <button type="button" class="edit-manual-resource rounded border border-gray-300 px-2 py-1 text-[10px] font-bold text-gray-600 hover:bg-gray-50 dark:border-slate-600 dark:text-slate-300">Editar recurso</button>
+                            <button type="button" class="remove-manual-resource rounded border border-red-200 px-2 py-1 text-[10px] font-bold text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-300">Quitar</button>
+                        </div>
+                    </div>
+
+                    <div class="resource-editor hidden space-y-2">
+                        <input type="text" class="resource-title-input rounded border border-gray-300 px-2 py-1.5 text-xs dark:bg-slate-800 dark:border-slate-600 dark:text-slate-100" placeholder="Titulo del recurso (obligatorio)">
+                        <input type="text" class="resource-url-input rounded border border-gray-300 px-2 py-1.5 text-xs dark:bg-slate-800 dark:border-slate-600 dark:text-slate-100" placeholder="https://... (opcional)">
+                        <textarea rows="2" class="resource-description-input rounded border border-gray-300 px-2 py-1.5 text-xs dark:bg-slate-800 dark:border-slate-600 dark:text-slate-100" placeholder="Descripcion breve (opcional)"></textarea>
+                        <div class="flex items-center gap-2">
+                            <button type="button" class="save-manual-resource rounded bg-teal-600 px-2 py-1 text-[10px] font-bold text-white hover:bg-teal-700">Guardar recurso</button>
+                            <button type="button" class="cancel-manual-resource rounded border border-gray-300 px-2 py-1 text-[10px] font-bold text-gray-600 hover:bg-gray-50 dark:border-slate-600 dark:text-slate-300">Cancelar</button>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+                {% endif %}
+            </div>
+            <p class="mt-1 text-xs text-gray-400 dark:text-slate-500">Puedes agregar guias, videos, enlaces y materiales relacionados con este proyecto.</p>
         </div>
 
         <div>
             <label class="block text-xs font-semibold text-gray-600 dark:text-slate-400 mb-1">Contenido interno (Markdown)</label>
+            <div class="mb-2 flex flex-wrap gap-1.5 text-[10px] font-bold text-gray-500 dark:text-slate-400">
+                <button type="button" data-md-snippet="# Titulo\n" class="manual-md-chip rounded-md bg-gray-100 px-2 py-1 hover:bg-gray-200 transition dark:bg-slate-700 dark:hover:bg-slate-600"># titulo</button>
+                <button type="button" data-md-snippet="## Seccion\n" class="manual-md-chip rounded-md bg-gray-100 px-2 py-1 hover:bg-gray-200 transition dark:bg-slate-700 dark:hover:bg-slate-600">## seccion</button>
+                <button type="button" data-md-snippet="- Punto\n- Punto\n" class="manual-md-chip rounded-md bg-gray-100 px-2 py-1 hover:bg-gray-200 transition dark:bg-slate-700 dark:hover:bg-slate-600">- lista</button>
+                <button type="button" data-md-snippet="1. Paso uno\n2. Paso dos\n" class="manual-md-chip rounded-md bg-gray-100 px-2 py-1 hover:bg-gray-200 transition dark:bg-slate-700 dark:hover:bg-slate-600">1. lista</button>
+                <button type="button" data-md-snippet="**texto importante**" class="manual-md-chip rounded-md bg-gray-100 px-2 py-1 hover:bg-gray-200 transition dark:bg-slate-700 dark:hover:bg-slate-600">**negrita**</button>
+                <button type="button" data-md-snippet="[texto del enlace](https://example.com)" class="manual-md-chip rounded-md bg-gray-100 px-2 py-1 hover:bg-gray-200 transition dark:bg-slate-700 dark:hover:bg-slate-600">[link](url)</button>
+            </div>
             <textarea name="content_markdown" rows="8"
                       class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono dark:bg-slate-800 dark:border-slate-600 dark:text-slate-100"
                       placeholder="## Materiales&#10;- Palillos&#10;- Pegamento&#10;&#10;## Pasos&#10;1. ...">{{ manual.content_markdown if manual else '' }}</textarea>
@@ -76,11 +121,192 @@
 
         <div class="flex items-center gap-3">
             <button type="submit" class="rounded-xl bg-teal-600 px-5 py-2 text-sm font-bold text-white hover:bg-teal-700 transition">
-                {{ 'Guardar cambios' if manual else 'Crear manual' }}
+                {{ 'Guardar cambios' if manual else 'Crear proyecto' }}
             </button>
             <a href="{{ url_for('main.manual_detail', manual_id=manual.id) if manual else url_for('main.manuals') }}"
                class="rounded-xl border border-gray-300 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 transition dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800">Cancelar</a>
         </div>
     </form>
 </div>
+
+<script>
+(function setupManualMarkdownChips() {
+    const editor = document.querySelector('textarea[name="content_markdown"]');
+    const chips = Array.from(document.querySelectorAll('.manual-md-chip'));
+    if (!editor || !chips.length) {
+        return;
+    }
+
+    chips.forEach((chip) => {
+        chip.addEventListener('click', () => {
+            const snippet = chip.dataset.mdSnippet || '';
+            const start = editor.selectionStart ?? editor.value.length;
+            const end = editor.selectionEnd ?? editor.value.length;
+            const before = editor.value.slice(0, start);
+            const selected = editor.value.slice(start, end);
+            const after = editor.value.slice(end);
+            const content = snippet.includes('texto importante') && selected
+                ? snippet.replace('texto importante', selected)
+                : snippet.includes('texto del enlace') && selected
+                    ? snippet.replace('texto del enlace', selected)
+                    : snippet;
+
+            editor.value = before + content + after;
+            const nextCursor = before.length + content.length;
+            editor.focus();
+            editor.setSelectionRange(nextCursor, nextCursor);
+        });
+    });
+})();
+
+(function setupManualResourcesEditor() {
+    const list = document.getElementById('manual-resources-list');
+    const addButton = document.getElementById('add-manual-resource');
+    if (!list || !addButton) {
+        return;
+    }
+
+    function createRow() {
+        const row = document.createElement('div');
+        row.className = 'manual-resource-row rounded-lg border border-gray-200 p-3 dark:border-slate-700';
+        row.innerHTML = `
+            <input type="hidden" name="resource_titles[]" class="resource-title-value" value="">
+            <input type="hidden" name="resource_urls[]" class="resource-url-value" value="">
+            <input type="hidden" name="resource_descriptions[]" class="resource-description-value" value="">
+
+            <div class="resource-summary hidden space-y-2">
+                <p class="resource-title-text text-sm font-semibold text-gray-800 dark:text-slate-100"></p>
+                <a href="#" target="_blank" rel="noopener noreferrer" class="resource-url-link hidden text-xs text-teal-600 hover:underline dark:text-teal-300"></a>
+                <p class="resource-url-empty text-xs text-gray-400 dark:text-slate-500">Sin URL</p>
+                <p class="resource-description-text hidden text-xs text-gray-500 dark:text-slate-400"></p>
+                <div class="flex items-center gap-2">
+                    <button type="button" class="edit-manual-resource rounded border border-gray-300 px-2 py-1 text-[10px] font-bold text-gray-600 hover:bg-gray-50 dark:border-slate-600 dark:text-slate-300">Editar recurso</button>
+                    <button type="button" class="remove-manual-resource rounded border border-red-200 px-2 py-1 text-[10px] font-bold text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-300">Quitar</button>
+                </div>
+            </div>
+
+            <div class="resource-editor space-y-2">
+                <input type="text" class="resource-title-input rounded border border-gray-300 px-2 py-1.5 text-xs dark:bg-slate-800 dark:border-slate-600 dark:text-slate-100" placeholder="Titulo del recurso (obligatorio)">
+                <input type="text" class="resource-url-input rounded border border-gray-300 px-2 py-1.5 text-xs dark:bg-slate-800 dark:border-slate-600 dark:text-slate-100" placeholder="https://... (opcional)">
+                <textarea rows="2" class="resource-description-input rounded border border-gray-300 px-2 py-1.5 text-xs dark:bg-slate-800 dark:border-slate-600 dark:text-slate-100" placeholder="Descripcion breve (opcional)"></textarea>
+                <div class="flex items-center gap-2">
+                    <button type="button" class="save-manual-resource rounded bg-teal-600 px-2 py-1 text-[10px] font-bold text-white hover:bg-teal-700">Guardar recurso</button>
+                    <button type="button" class="cancel-manual-resource rounded border border-gray-300 px-2 py-1 text-[10px] font-bold text-gray-600 hover:bg-gray-50 dark:border-slate-600 dark:text-slate-300">Cancelar</button>
+                    <button type="button" class="remove-manual-resource rounded border border-red-200 px-2 py-1 text-[10px] font-bold text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-300">Quitar</button>
+                </div>
+            </div>
+        `;
+        return row;
+    }
+
+    function syncSummary(row) {
+        const title = row.querySelector('.resource-title-value').value.trim();
+        const url = row.querySelector('.resource-url-value').value.trim();
+        const description = row.querySelector('.resource-description-value').value.trim();
+
+        row.querySelector('.resource-title-text').textContent = title;
+
+        const urlLink = row.querySelector('.resource-url-link');
+        const urlEmpty = row.querySelector('.resource-url-empty');
+        if (url) {
+            urlLink.href = url;
+            urlLink.textContent = url;
+            urlLink.classList.remove('hidden');
+            urlEmpty.classList.add('hidden');
+        } else {
+            urlLink.classList.add('hidden');
+            urlEmpty.classList.remove('hidden');
+        }
+
+        const descriptionText = row.querySelector('.resource-description-text');
+        if (description) {
+            descriptionText.textContent = description;
+            descriptionText.classList.remove('hidden');
+        } else {
+            descriptionText.classList.add('hidden');
+        }
+    }
+
+    function openEditor(row) {
+        row.querySelector('.resource-title-input').value = row.querySelector('.resource-title-value').value;
+        row.querySelector('.resource-url-input').value = row.querySelector('.resource-url-value').value;
+        row.querySelector('.resource-description-input').value = row.querySelector('.resource-description-value').value;
+        row.querySelector('.resource-summary').classList.add('hidden');
+        row.querySelector('.resource-editor').classList.remove('hidden');
+    }
+
+    function closeEditor(row) {
+        row.querySelector('.resource-editor').classList.add('hidden');
+        row.querySelector('.resource-summary').classList.remove('hidden');
+    }
+
+    function initializeExistingRows() {
+        const rows = Array.from(list.querySelectorAll('.manual-resource-row'));
+        rows.forEach((row) => {
+            syncSummary(row);
+            closeEditor(row);
+        });
+    }
+
+    addButton.addEventListener('click', () => {
+        const row = createRow();
+        list.appendChild(row);
+        openEditor(row);
+    });
+
+    list.addEventListener('click', (event) => {
+        const row = event.target.closest('.manual-resource-row');
+        if (!row) {
+            return;
+        }
+
+        if (event.target.closest('.edit-manual-resource')) {
+            openEditor(row);
+            return;
+        }
+
+        if (event.target.closest('.save-manual-resource')) {
+            const title = row.querySelector('.resource-title-input').value.trim();
+            const url = row.querySelector('.resource-url-input').value.trim();
+            const description = row.querySelector('.resource-description-input').value.trim();
+
+            if (!title) {
+                alert('El titulo del recurso es obligatorio.');
+                return;
+            }
+            if (url && !/^https?:\/\//i.test(url)) {
+                alert('La URL del recurso debe iniciar con http:// o https://.');
+                return;
+            }
+
+            row.querySelector('.resource-title-value').value = title;
+            row.querySelector('.resource-url-value').value = url;
+            row.querySelector('.resource-description-value').value = description;
+            syncSummary(row);
+            closeEditor(row);
+            return;
+        }
+
+        if (event.target.closest('.cancel-manual-resource')) {
+            const hasSavedTitle = row.querySelector('.resource-title-value').value.trim();
+            if (!hasSavedTitle) {
+                row.remove();
+                return;
+            }
+            closeEditor(row);
+            return;
+        }
+
+        const button = event.target.closest('.remove-manual-resource');
+        if (!button) {
+            return;
+        }
+        if (row) {
+            row.remove();
+        }
+    });
+
+    initializeExistingRows();
+})();
+</script>
 {% endblock %}

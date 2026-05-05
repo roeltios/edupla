@@ -282,6 +282,12 @@ class ProjectManual(db.Model):
         cascade='all, delete-orphan',
         order_by='ProjectManualSchedule.start_at.asc()'
     )
+    resources = db.relationship(
+        'ProjectManualResource',
+        backref='manual',
+        cascade='all, delete-orphan',
+        order_by='ProjectManualResource.position.asc()'
+    )
 
     @property
     def html_content(self):
@@ -306,6 +312,17 @@ class ProjectManualTheme(db.Model):
     __table_args__ = (
         db.UniqueConstraint('manual_id', 'theme', name='uq_project_manual_theme_manual_theme'),
     )
+
+
+class ProjectManualResource(db.Model):
+    __tablename__ = 'project_manual_resource'
+
+    id = db.Column(db.Integer, primary_key=True)
+    manual_id = db.Column(db.Integer, db.ForeignKey('project_manual.id'), nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    url = db.Column(db.String(500))
+    description = db.Column(db.Text)
+    position = db.Column(db.Integer, default=1)
 
 
 class ProjectRubric(db.Model):

@@ -203,7 +203,7 @@
                 <div class="hidden md:flex items-center space-x-2">
                     {% if current_user %}
                     <a href="{{ url_for('main.dashboard') }}" class="text-sm font-medium text-gray-600 hover:text-teal-600 transition dark:text-slate-300 dark:hover:text-teal-400">Calendario</a>
-                    <a href="{{ url_for('main.manuals') }}" class="text-sm font-medium text-gray-600 hover:text-teal-600 transition dark:text-slate-300 dark:hover:text-teal-400">Manuales</a>
+                    <a href="{{ url_for('main.manuals') }}" class="text-sm font-medium text-gray-600 hover:text-teal-600 transition dark:text-slate-300 dark:hover:text-teal-400">Proyectos</a>
                     <a href="{{ url_for('main.rubric_bank') }}" class="text-sm font-medium text-gray-600 hover:text-teal-600 transition dark:text-slate-300 dark:hover:text-teal-400">Rúbricas</a>
 
                     {% if is_admin %}
@@ -225,7 +225,7 @@
                             + Nueva
                         </summary>
                         <div class="absolute right-0 mt-2 w-56 rounded-xl border border-gray-200 bg-white shadow-lg p-2 dark:border-slate-700 dark:bg-slate-900">
-                            <a href="{{ url_for('main.create_manual') }}" class="block rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-teal-50 dark:text-slate-200 dark:hover:bg-slate-800">Nuevo Manual</a>
+                            <a href="{{ url_for('main.create_manual') }}" class="block rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-teal-50 dark:text-slate-200 dark:hover:bg-slate-800">Nuevo Proyecto</a>
                             <a href="{{ url_for('main.create_rubric_bank_item') }}" class="block rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-teal-50 dark:text-slate-200 dark:hover:bg-slate-800">Nueva Rubrica</a>
                         </div>
                     </details>
@@ -256,7 +256,7 @@
                 <div class="rounded-xl border border-gray-200 bg-white p-2 space-y-1 dark:border-slate-700 dark:bg-slate-900">
                     {% if current_user %}
                     <a href="{{ url_for('main.dashboard') }}" class="block rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-teal-50 dark:text-slate-200 dark:hover:bg-slate-800">Calendario</a>
-                    <a href="{{ url_for('main.manuals') }}" class="block rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-teal-50 dark:text-slate-200 dark:hover:bg-slate-800">Manuales</a>
+                    <a href="{{ url_for('main.manuals') }}" class="block rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-teal-50 dark:text-slate-200 dark:hover:bg-slate-800">Proyectos</a>
                     <a href="{{ url_for('main.rubric_bank') }}" class="block rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-teal-50 dark:text-slate-200 dark:hover:bg-slate-800">Rúbricas</a>
                     {% if is_admin %}
                     <a href="{{ url_for('main.dashboard') }}" class="block rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-teal-50 dark:text-slate-200 dark:hover:bg-slate-800">Panel</a>
@@ -266,7 +266,7 @@
                     <button id="theme-toggle-mobile" type="button" class="w-full text-left rounded-lg px-3 py-2 text-sm font-semibold text-teal-700 hover:bg-teal-50 transition dark:text-teal-300 dark:hover:bg-slate-800">Modo</button>
                     {% if is_admin %}
                     <div class="border-t border-gray-200 my-1 dark:border-slate-700"></div>
-                    <a href="{{ url_for('main.create_manual') }}" class="block rounded-lg px-3 py-2 text-sm font-semibold text-teal-700 hover:bg-teal-50 dark:text-teal-300 dark:hover:bg-slate-800">+ Nuevo Manual</a>
+                    <a href="{{ url_for('main.create_manual') }}" class="block rounded-lg px-3 py-2 text-sm font-semibold text-teal-700 hover:bg-teal-50 dark:text-teal-300 dark:hover:bg-slate-800">+ Nuevo Proyecto</a>
                     <a href="{{ url_for('main.create_rubric_bank_item') }}" class="block rounded-lg px-3 py-2 text-sm font-semibold text-teal-700 hover:bg-teal-50 dark:text-teal-300 dark:hover:bg-slate-800">+ Nueva Rubrica</a>
                     {% endif %}
                     <div class="border-t border-gray-200 my-1 dark:border-slate-700"></div>
@@ -282,7 +282,7 @@
         </div>
     </nav>
 
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+    <main class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 <div class="mb-4 space-y-2">

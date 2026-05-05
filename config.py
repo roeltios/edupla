@@ -28,6 +28,8 @@ class Config:
 
 class DevelopmentConfig(Config):
     SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-secret-change-me')
+    WTF_CSRF_ENABLED = False
+    PREFERRED_URL_SCHEME = 'https'
 
 
 class TestingConfig(Config):

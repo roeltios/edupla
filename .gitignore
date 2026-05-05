@@ -16,6 +16,9 @@ instance/
 # Environment variables
 .env
 
+# Local tunnel credentials/config
+.cloudflared/
+
 # IDE
 .vscode/
 .DS_Store

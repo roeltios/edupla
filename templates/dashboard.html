@@ -1,16 +1,16 @@
 {% extends 'layout.html' %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto space-y-6">
+<div class="max-w-5xl mx-auto space-y-6">
     <div class="flex flex-wrap items-end justify-between gap-4">
         <div>
             <h1 class="text-2xl font-extrabold text-gray-900 sm:text-3xl dark:text-slate-100">Calendario de Proyectos</h1>
-            <p class="mt-2 text-sm text-gray-500 dark:text-slate-400">Visualiza por semana o mes y agenda sesiones de manuales.</p>
+            <p class="mt-2 text-sm text-gray-500 dark:text-slate-400">Visualiza por semana o mes y agenda sesiones de proyectos.</p>
         </div>
         <div class="flex items-center gap-2">
             <a href="{{ url_for('main.dashboard', view='week', date=selected_date.isoformat(), manual_id=selected_manual.id if selected_manual else None) }}" class="inline-flex items-center rounded-lg px-3 py-2 text-sm font-semibold transition {{ 'bg-teal-600 text-white' if view_mode == 'week' else 'border border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800' }}">Semana</a>
             <a href="{{ url_for('main.dashboard', view='month', date=selected_date.isoformat(), manual_id=selected_manual.id if selected_manual else None) }}" class="inline-flex items-center rounded-lg px-3 py-2 text-sm font-semibold transition {{ 'bg-teal-600 text-white' if view_mode == 'month' else 'border border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800' }}">Mes</a>
-            <a href="{{ url_for('main.manuals') }}" class="inline-flex items-center rounded-lg bg-teal-600 px-3 py-2 text-sm font-bold text-white hover:bg-teal-500 transition">Buscar manuales</a>
+            <a href="{{ url_for('main.manuals') }}" class="inline-flex items-center rounded-lg bg-teal-600 px-3 py-2 text-sm font-bold text-white hover:bg-teal-500 transition">Buscar proyectos</a>
         </div>
     </div>
 
@@ -21,9 +21,9 @@
             <p class="text-sm font-bold uppercase tracking-[0.18em] text-gray-700 dark:text-slate-200">{{ month_name }}</p>
             <a href="{{ url_for('main.dashboard', view='month', date=next_month_start, manual_id=selected_manual.id if selected_manual else None) }}" class="inline-flex items-center rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">Mes siguiente</a>
             {% else %}
-            <a href="{{ url_for('main.dashboard', view='week', week_start=prev_week_start, manual_id=selected_manual.id if selected_manual else None) }}" class="inline-flex items-center rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">Semana anterior</a>
+            <a href="{{ url_for('main.dashboard', view='week', week_start=prev_week_start, date=prev_week_start, manual_id=selected_manual.id if selected_manual else None) }}" class="inline-flex items-center rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">Semana anterior</a>
             <p class="text-sm font-bold uppercase tracking-[0.18em] text-gray-700 dark:text-slate-200">{{ week_start.strftime('%d/%m') }} - {{ week_days[-1].strftime('%d/%m') }}</p>
-            <a href="{{ url_for('main.dashboard', view='week', week_start=next_week_start, manual_id=selected_manual.id if selected_manual else None) }}" class="inline-flex items-center rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">Semana siguiente</a>
+            <a href="{{ url_for('main.dashboard', view='week', week_start=next_week_start, date=next_week_start, manual_id=selected_manual.id if selected_manual else None) }}" class="inline-flex items-center rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">Semana siguiente</a>
             {% endif %}
         </div>
     </div>
@@ -40,29 +40,21 @@
             {% for week in month_calendar %}
             <div class="grid grid-cols-7 gap-2">
                 {% for day in week %}
-                <section class="min-h-[140px] rounded-xl border border-gray-200 p-2 dark:border-slate-700 {% if day and day == selected_date %}ring-2 ring-teal-500{% endif %}">
+                {% set day_sessions = sessions_by_day.get(day, []) %}
+                <section class="min-h-[112px] rounded-xl border border-gray-200 p-2 dark:border-slate-700 {% if day and day == selected_date %}ring-2 ring-teal-500{% endif %}">
                     {% if day %}
-                    <div class="flex items-center justify-between gap-2">
-                        <p class="text-xs font-bold text-gray-700 dark:text-slate-200">{{ day.strftime('%d/%m') }}</p>
-                        <button type="button" class="open-schedule-modal rounded-md border border-teal-200 bg-teal-50 px-1.5 py-0.5 text-[10px] font-bold text-teal-700 hover:bg-teal-100 dark:border-teal-800 dark:bg-teal-900/30 dark:text-teal-300" data-date="{{ day.isoformat() }}">Agendar</button>
-                    </div>
-                    <div class="mt-2 space-y-1">
-                        {% for schedule in sessions_by_day.get(day, [])[:3] %}
-                        <details class="rounded-md border border-gray-200 bg-gray-50 p-1.5 dark:border-slate-700 dark:bg-slate-800/70">
-                            <summary class="cursor-pointer text-[11px] font-semibold text-gray-700 dark:text-slate-300">
-                                {{ schedule.start_at.strftime('%H:%M') }} {{ schedule.title[:22] }}{% if schedule.title|length > 22 %}...{% endif %}
-                            </summary>
-                            <form method="POST" action="{{ url_for('main.delete_dashboard_session', schedule_id=schedule.id) }}" class="mt-1" onsubmit="return confirm('Eliminar esta sesion calendarizada?');">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <input type="hidden" name="return_view" value="{{ view_mode }}">
-                                <button type="submit" class="w-full rounded bg-red-50 px-2 py-1 text-[11px] font-semibold text-red-700 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-300">Eliminar</button>
-                            </form>
-                        </details>
-                        {% endfor %}
-                        {% if sessions_by_day.get(day, [])|length > 3 %}
-                        <p class="text-[11px] text-gray-400 dark:text-slate-500">+ {{ sessions_by_day.get(day, [])|length - 3 }} más</p>
+                    <button type="button" class="open-day-view block w-full text-left rounded-md p-1 hover:bg-gray-50 dark:hover:bg-slate-800/50 transition" data-date="{{ day.isoformat() }}">
+                        <div class="flex items-center gap-2">
+                            <p class="text-xs font-bold text-gray-700 dark:text-slate-200">{{ day.strftime('%d/%m') }}</p>
+                        </div>
+                        {% if day_sessions %}
+                        <div class="mt-2">
+                            <p class="inline-flex items-center rounded-full bg-teal-50 px-2 py-0.5 text-[11px] font-bold text-teal-700 dark:bg-teal-900/30 dark:text-teal-300">
+                                {{ day_sessions|length }} sesión{{ 'es' if day_sessions|length != 1 }}
+                            </p>
+                        </div>
                         {% endif %}
-                    </div>
+                    </button>
                     {% else %}
                     <div class="h-full rounded-md bg-gray-50 dark:bg-slate-800/30"></div>
                     {% endif %}
@@ -73,69 +65,95 @@
         </div>
     </div>
     {% else %}
-    <div class="grid grid-cols-1 xl:grid-cols-7 gap-3">
+    <div class="grid grid-cols-7 gap-2">
         {% for day in week_days %}
-        <section class="rounded-2xl border border-gray-200 bg-white p-3 dark:bg-slate-900 dark:border-slate-700">
-            <div class="mb-2 border-b border-gray-100 pb-2 dark:border-slate-800">
-                <div class="flex items-start justify-between gap-2">
-                    <div>
-                        <p class="text-xs uppercase tracking-[0.18em] text-gray-400 dark:text-slate-500">{{ day.strftime('%A') }}</p>
-                        <p class="text-sm font-bold text-gray-900 dark:text-slate-100">{{ day.strftime('%d/%m') }}</p>
-                    </div>
-                    <button type="button" class="open-schedule-modal rounded-md border border-teal-200 bg-teal-50 px-2 py-1 text-[11px] font-bold text-teal-700 hover:bg-teal-100 dark:border-teal-800 dark:bg-teal-900/30 dark:text-teal-300" data-date="{{ day.isoformat() }}">Agendar</button>
+        {% set day_sessions = sessions_by_day.get(day, []) %}
+        <section class="min-h-[112px] rounded-xl border border-gray-200 bg-white p-2 dark:bg-slate-900 dark:border-slate-700 {% if day == selected_date %}ring-2 ring-teal-500{% endif %}">
+            <button type="button" class="open-day-view block w-full text-left rounded-md p-1 hover:bg-gray-50 dark:hover:bg-slate-800/50 transition" data-date="{{ day.isoformat() }}">
+                <div class="mb-2 border-b border-gray-100 pb-2 dark:border-slate-800">
+                    <p class="text-xs uppercase tracking-[0.18em] text-gray-400 dark:text-slate-500">{{ day.strftime('%A') }}</p>
+                    <p class="text-sm font-bold text-gray-900 dark:text-slate-100">{{ day.strftime('%d/%m') }}</p>
                 </div>
-            </div>
-
-            <div class="space-y-2">
-                {% for schedule in sessions_by_day.get(day, []) %}
-                <details class="rounded-xl border border-gray-200 bg-gray-50 p-2 dark:border-slate-700 dark:bg-slate-800/70">
-                    <summary class="cursor-pointer">
-                        <p class="text-xs font-bold text-gray-900 dark:text-slate-100">{{ schedule.start_at.strftime('%H:%M') }} - {{ schedule.end_at.strftime('%H:%M') }}</p>
-                        <p class="text-xs text-gray-700 dark:text-slate-300">{{ schedule.title }}</p>
-                        <p class="text-[11px] text-gray-400 dark:text-slate-500">{{ schedule.manual.grade_level }} · {{ schedule.status|capitalize }}</p>
-                    </summary>
-
-                    <form method="POST" action="{{ url_for('main.update_dashboard_session', schedule_id=schedule.id) }}" class="mt-2 space-y-2">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <input type="hidden" name="return_view" value="{{ view_mode }}">
-
-                        <select name="manual_id" class="w-full rounded border border-gray-300 px-2 py-1 text-xs dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100">
-                            {% for manual in manuals %}
-                            <option value="{{ manual.id }}" {% if manual.id == schedule.manual_id %}selected{% endif %}>{{ manual.title }}</option>
-                            {% endfor %}
-                        </select>
-
-                        <input type="text" name="title" value="{{ schedule.title }}" class="w-full rounded border border-gray-300 px-2 py-1 text-xs dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100">
-                        <input type="datetime-local" name="start_at" value="{{ schedule.start_at.strftime('%Y-%m-%dT%H:%M') }}" class="w-full rounded border border-gray-300 px-2 py-1 text-xs dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100" required>
-
-                        {% set duration = ((schedule.end_at - schedule.start_at).total_seconds() // 60) | int %}
-                        <input type="number" name="duration_minutes" min="30" max="360" value="{{ duration }}" class="w-full rounded border border-gray-300 px-2 py-1 text-xs dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100">
-
-                        <select name="status" class="w-full rounded border border-gray-300 px-2 py-1 text-xs dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100">
-                            {% for status in schedule_statuses %}
-                            <option value="{{ status }}" {% if status == schedule.status %}selected{% endif %}>{{ status|capitalize }}</option>
-                            {% endfor %}
-                        </select>
-
-                        <textarea name="notes" rows="2" class="w-full rounded border border-gray-300 px-2 py-1 text-xs dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100">{{ schedule.notes }}</textarea>
-
-                        <button type="submit" class="w-full rounded-md bg-teal-600 px-2 py-1.5 text-xs font-bold text-white hover:bg-teal-500">Guardar cambios</button>
-                    </form>
-
-                    <form method="POST" action="{{ url_for('main.delete_dashboard_session', schedule_id=schedule.id) }}" class="mt-2" onsubmit="return confirm('Eliminar esta sesion calendarizada?');">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <input type="hidden" name="return_view" value="{{ view_mode }}">
-                        <button type="submit" class="w-full rounded-md bg-red-50 px-2 py-1.5 text-xs font-bold text-red-700 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-300">Eliminar sesión</button>
-                    </form>
-                </details>
-                {% else %}
-                <p class="text-xs text-gray-400 dark:text-slate-500">Sin sesiones.</p>
-                {% endfor %}
-            </div>
+                {% if day_sessions %}
+                <div>
+                    <p class="inline-flex items-center rounded-full bg-teal-50 px-2 py-0.5 text-[11px] font-bold text-teal-700 dark:bg-teal-900/30 dark:text-teal-300">
+                        {{ day_sessions|length }} sesión{{ 'es' if day_sessions|length != 1 }}
+                    </p>
+                </div>
+                {% endif %}
+            </button>
         </section>
         {% endfor %}
     </div>
     {% endif %}
+
+    <div id="day-view-modal" class="fixed inset-0 z-50 hidden">
+        <div id="day-view-backdrop" class="absolute inset-0 bg-slate-900/45"></div>
+        <div class="relative z-10 flex min-h-full items-end justify-center p-3 sm:items-center">
+            <div class="w-full max-w-2xl rounded-2xl border border-gray-200 bg-white p-5 shadow-2xl dark:bg-slate-900 dark:border-slate-700">
+                <div class="mb-2 flex items-center justify-between gap-3">
+                    <h2 id="day-view-title" class="text-sm font-bold uppercase tracking-[0.2em] text-teal-600 dark:text-teal-300">Vista por día</h2>
+                    <button id="close-day-view" type="button" class="rounded-md border border-gray-300 px-2 py-1 text-xs font-semibold text-gray-600 hover:bg-gray-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">Cerrar</button>
+                </div>
+
+                <div id="day-view-list" class="space-y-2"></div>
+
+                <div class="mt-4">
+                    <button id="open-schedule-from-day" type="button" class="inline-flex items-center rounded-lg bg-teal-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-teal-500 transition">Agendar sesión</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="edit-session-modal" class="fixed inset-0 z-50 hidden">
+        <div id="edit-session-backdrop" class="absolute inset-0 bg-slate-900/45"></div>
+        <div class="relative z-10 flex min-h-full items-end justify-center p-3 sm:items-center">
+            <div class="w-full max-w-2xl rounded-2xl border border-gray-200 bg-white p-5 shadow-2xl dark:bg-slate-900 dark:border-slate-700">
+                <div class="mb-2 flex items-center justify-between gap-3">
+                    <h2 class="text-sm font-bold uppercase tracking-[0.2em] text-teal-600 dark:text-teal-300">Editar sesión agendada</h2>
+                    <button id="close-edit-session" type="button" class="rounded-md border border-gray-300 px-2 py-1 text-xs font-semibold text-gray-600 hover:bg-gray-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">Cerrar</button>
+                </div>
+
+                <form id="edit-session-form" method="POST" action="#" class="space-y-3">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="return_view" value="{{ view_mode }}">
+                    <input type="hidden" id="edit-manual-id" name="manual_id" value="">
+
+                    <div>
+                        <label class="text-xs font-semibold text-gray-500 dark:text-slate-400">Título</label>
+                        <input id="edit-title" type="text" name="title" class="mt-1 w-full rounded border border-gray-300 px-2 py-1 text-xs dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100">
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <div>
+                            <label class="text-xs font-semibold text-gray-500 dark:text-slate-400">Inicio</label>
+                            <input id="edit-start-at" type="datetime-local" name="start_at" class="mt-1 w-full rounded border border-gray-300 px-2 py-1 text-xs dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100" required>
+                        </div>
+                        <div>
+                            <label class="text-xs font-semibold text-gray-500 dark:text-slate-400">Duración (min)</label>
+                            <input id="edit-duration" type="number" name="duration_minutes" min="30" max="360" class="mt-1 w-full rounded border border-gray-300 px-2 py-1 text-xs dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="text-xs font-semibold text-gray-500 dark:text-slate-400">Estado</label>
+                        <select id="edit-status" name="status" class="mt-1 w-full rounded border border-gray-300 px-2 py-1 text-xs dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100">
+                            {% for status in schedule_statuses %}
+                            <option value="{{ status }}">{{ status|capitalize }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="text-xs font-semibold text-gray-500 dark:text-slate-400">Notas</label>
+                        <textarea id="edit-notes" name="notes" rows="2" class="mt-1 w-full rounded border border-gray-300 px-2 py-1 text-xs dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100"></textarea>
+                    </div>
+
+                    <button type="submit" class="w-full rounded-lg bg-teal-600 px-3 py-2 text-xs font-bold text-white hover:bg-teal-500 transition">Guardar cambios</button>
+                </form>
+            </div>
+        </div>
+    </div>
 
     <div id="schedule-modal" class="fixed inset-0 z-50 hidden">
         <div id="schedule-modal-backdrop" class="absolute inset-0 bg-slate-900/45"></div>
@@ -153,9 +171,9 @@
             <input type="hidden" id="start-at-input" name="start_at" required>
 
             <div class="lg:col-span-2">
-                <label class="text-xs font-semibold text-gray-500 dark:text-slate-400">Manual</label>
+                <label class="text-xs font-semibold text-gray-500 dark:text-slate-400">Proyecto</label>
                 <select name="manual_id" required class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100">
-                    <option value="">Selecciona un manual</option>
+                    <option value="">Selecciona un proyecto</option>
                     {% for manual in manuals %}
                     <option value="{{ manual.id }}" {% if selected_manual and selected_manual.id == manual.id %}selected{% endif %}>{{ manual.title }} · {{ manual.grade_level }}</option>
                     {% endfor %}
@@ -177,9 +195,12 @@
                 <div id="selected-slot-label" class="mt-1 w-full rounded-lg border border-dashed border-gray-300 bg-gray-50 px-3 py-2 text-sm font-semibold text-gray-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">{{ selected_date.strftime('%d/%m/%Y') }} · 08:00</div>
             </div>
 
-            <div>
-                <label class="text-xs font-semibold text-gray-500 dark:text-slate-400">Duración (minutos)</label>
-                <input type="number" name="duration_minutes" min="30" max="360" value="120" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100">
+            <input type="hidden" name="duration_minutes" value="120">
+            <div class="lg:col-span-3">
+                <label class="text-xs font-semibold text-gray-500 dark:text-slate-400">Sesión del proyecto</label>
+                <select id="modal-session-select" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100">
+                    <option value="">— Selecciona primero un proyecto —</option>
+                </select>
             </div>
 
             <div>
@@ -193,7 +214,7 @@
 
             <div class="lg:col-span-3">
                 <label class="text-xs font-semibold text-gray-500 dark:text-slate-400">Título visible (opcional)</label>
-                <input type="text" name="title" placeholder="Si se deja vacío, se usa el título del manual" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100">
+                <input type="text" name="title" placeholder="Si se deja vacío, se usa el título del proyecto" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100">
             </div>
 
             <div class="lg:col-span-3">
@@ -212,6 +233,26 @@
 
 <script>
     (function () {
+        const daySessionsByDate = {{ day_sessions_json | safe }};
+        const dayViewModal = document.getElementById('day-view-modal');
+        const dayViewBackdrop = document.getElementById('day-view-backdrop');
+        const dayViewTitle = document.getElementById('day-view-title');
+        const dayViewList = document.getElementById('day-view-list');
+        const closeDayViewBtn = document.getElementById('close-day-view');
+        const openScheduleFromDayBtn = document.getElementById('open-schedule-from-day');
+        const openDayButtons = Array.from(document.querySelectorAll('.open-day-view'));
+
+        const editSessionModal = document.getElementById('edit-session-modal');
+        const editSessionBackdrop = document.getElementById('edit-session-backdrop');
+        const closeEditSessionBtn = document.getElementById('close-edit-session');
+        const editSessionForm = document.getElementById('edit-session-form');
+        const editManualId = document.getElementById('edit-manual-id');
+        const editTitle = document.getElementById('edit-title');
+        const editStartAt = document.getElementById('edit-start-at');
+        const editDuration = document.getElementById('edit-duration');
+        const editStatus = document.getElementById('edit-status');
+        const editNotes = document.getElementById('edit-notes');
+
         const modal = document.getElementById('schedule-modal');
         const closeBtn = document.getElementById('close-schedule-modal');
         const backdrop = document.getElementById('schedule-modal-backdrop');
@@ -223,7 +264,7 @@
         const startTimeInput = document.getElementById('start-time-input');
         const selectedLabel = document.getElementById('selected-slot-label');
 
-        if (!modal || !closeBtn || !backdrop || !dayLabel || openButtons.length === 0 || !form || !startAtInput || !startDateInput || !startTimeInput || !selectedLabel) {
+        if (!modal || !closeBtn || !backdrop || !dayLabel || !form || !startAtInput || !startDateInput || !startTimeInput || !selectedLabel || !dayViewModal || !dayViewBackdrop || !dayViewTitle || !dayViewList || !closeDayViewBtn || !openScheduleFromDayBtn || !editSessionModal || !editSessionBackdrop || !closeEditSessionBtn || !editSessionForm || !editManualId || !editTitle || !editStartAt || !editDuration || !editStatus || !editNotes) {
             return;
         }
 
@@ -238,12 +279,88 @@
             modal.classList.remove('hidden');
         }
 
-        openButtons.forEach(function (button) {
-            button.addEventListener('click', function () {
-                const dateValue = button.getAttribute('data-date');
-                if (!dateValue) {
-                    return;
-                }
+        function closeDayViewModal() {
+            dayViewModal.classList.add('hidden');
+        }
+
+        function closeEditSessionModal() {
+            editSessionModal.classList.add('hidden');
+        }
+
+        function openEditSessionModal(session) {
+            editSessionForm.action = '/dashboard/sessions/' + session.id + '/update';
+            editManualId.value = session.manual_id || '';
+            editTitle.value = session.title || '';
+            editStartAt.value = session.start_at || '';
+            editDuration.value = session.duration_minutes || 120;
+            editStatus.value = session.status_raw || 'planned';
+            editNotes.value = session.notes || '';
+            editSessionModal.classList.remove('hidden');
+        }
+
+        function openDayViewModal(dateValue) {
+            const sessions = daySessionsByDate[String(dateValue)] || [];
+            dayViewTitle.textContent = 'Vista por día · ' + dateValue.split('-').reverse().join('/');
+            dayViewList.innerHTML = '';
+
+            if (!sessions.length) {
+                const empty = document.createElement('p');
+                empty.className = 'text-xs text-gray-400 dark:text-slate-500';
+                empty.textContent = 'No hay sesiones agendadas para este día.';
+                dayViewList.appendChild(empty);
+            } else {
+                sessions.forEach(function (s) {
+                    const item = document.createElement('div');
+                    item.className = 'rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-800/70';
+                    item.innerHTML = '<p class="text-xs font-bold text-gray-900 dark:text-slate-100">' + s.start + ' - ' + s.end + '</p>'
+                        + '<p class="text-xs text-gray-700 dark:text-slate-300">' + s.title + '</p>'
+                        + '<p class="text-[11px] text-gray-400 dark:text-slate-500">' + (s.grade_level || '-') + ' · ' + s.status + '</p>';
+
+                    const actions = document.createElement('div');
+                    actions.className = 'mt-2';
+                    const editBtn = document.createElement('button');
+                    editBtn.type = 'button';
+                    editBtn.className = 'rounded border border-gray-300 px-2 py-1 text-[11px] font-semibold text-gray-700 hover:bg-gray-100 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700';
+                    editBtn.textContent = 'Editar';
+                    editBtn.addEventListener('click', function () {
+                        openEditSessionModal(s);
+                    });
+                    actions.appendChild(editBtn);
+                    item.appendChild(actions);
+                    dayViewList.appendChild(item);
+                });
+            }
+
+            openScheduleFromDayBtn.setAttribute('data-date', dateValue);
+            dayViewModal.classList.remove('hidden');
+        }
+
+        openDayButtons.forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                const dateValue = btn.getAttribute('data-date');
+                if (!dateValue) return;
+                openDayViewModal(dateValue);
+            });
+        });
+
+        closeDayViewBtn.addEventListener('click', closeDayViewModal);
+        dayViewBackdrop.addEventListener('click', closeDayViewModal);
+        closeEditSessionBtn.addEventListener('click', closeEditSessionModal);
+        editSessionBackdrop.addEventListener('click', closeEditSessionModal);
+
+        openScheduleFromDayBtn.addEventListener('click', function () {
+            const dateValue = openScheduleFromDayBtn.getAttribute('data-date');
+            if (!dateValue) return;
+            closeDayViewModal();
+            openModalWithDate(dateValue);
+        });
+
+        openButtons.forEach(function (el) {
+            el.addEventListener('click', function (e) {
+                // Ignore clicks originating from inside interactive children (forms, buttons, etc.)
+                if (e.target.closest('form, button, a, details')) return;
+                const dateValue = el.getAttribute('data-date');
+                if (!dateValue) return;
                 openModalWithDate(dateValue);
             });
         });
@@ -253,6 +370,8 @@
         document.addEventListener('keydown', function (event) {
             if (event.key === 'Escape') {
                 closeModal();
+                closeDayViewModal();
+                closeEditSessionModal();
             }
         });
 
@@ -274,6 +393,46 @@
         startDateInput.addEventListener('change', syncStartAt);
         startTimeInput.addEventListener('change', syncStartAt);
         syncStartAt();
+
+        // Session plans selector
+        const sessionPlans = {{ session_plans_json | safe }};
+        const manualSelect = form.querySelector('select[name="manual_id"]');
+        const sessionSelect = document.getElementById('modal-session-select');
+        const titleInput = form.querySelector('input[name="title"]');
+
+        function populateSessions(manualId) {
+            sessionSelect.innerHTML = '';
+            const plans = (manualId && sessionPlans[String(manualId)]) || [];
+            if (!plans.length) {
+                sessionSelect.innerHTML = '<option value="">— Sin sesiones cargadas —</option>';
+                return;
+            }
+            const blank = document.createElement('option');
+            blank.value = '';
+            blank.textContent = '— Selecciona una sesión (opcional) —';
+            sessionSelect.appendChild(blank);
+            plans.forEach(function (sp) {
+                const opt = document.createElement('option');
+                opt.value = sp.session_number;
+                opt.textContent = 'Sesión ' + sp.session_number + ': ' + sp.objective;
+                sessionSelect.appendChild(opt);
+            });
+        }
+
+        manualSelect.addEventListener('change', function () {
+            populateSessions(this.value);
+        });
+
+        sessionSelect.addEventListener('change', function () {
+            const plans = (manualSelect.value && sessionPlans[String(manualSelect.value)]) || [];
+            const sp = plans.find(function (p) { return String(p.session_number) === this.value; }, this);
+            if (sp && titleInput) {
+                titleInput.value = 'Sesión ' + sp.session_number + ': ' + sp.objective;
+            }
+        });
+
+        // Pre-populate if a manual is already selected
+        if (manualSelect.value) populateSessions(manualSelect.value);
 
         form.addEventListener('submit', function (event) {
             if (startAtInput.value) {

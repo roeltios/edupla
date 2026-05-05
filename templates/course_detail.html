@@ -62,11 +62,28 @@
     <div class="mt-6">
         <h2 class="text-xl font-bold text-gray-900 dark:text-slate-100 mb-3">Recursos del Curso</h2>
         <div class="space-y-2">
-            {% for resource in resources %}
-            <a href="{{ resource.url }}" target="_blank" rel="noopener noreferrer" class="block rounded-lg border border-gray-100 bg-gray-50 px-3 py-2.5 hover:bg-teal-50 hover:border-teal-100 transition dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-slate-700">
-                <p class="font-semibold text-gray-800 dark:text-slate-100">{{ resource.title }}</p>
-                <p class="text-sm text-gray-500 dark:text-slate-400">{{ resource.resource_type|capitalize }}{% if resource.module %} · Modulo {{ resource.module.sequence }}{% endif %}</p>
-            </a>
+                {% for resource in resources %}
+                {% if resource.url %}
+                <a href="{{ resource.url }}" target="_blank" rel="noopener noreferrer" class="block rounded-lg border border-gray-100 bg-gray-50 px-3 py-2.5 hover:bg-teal-50 hover:border-teal-100 transition dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-slate-700">
+                    <div class="flex items-center justify-between gap-2">
+                        <div>
+                            <h4 class="text-sm font-bold text-gray-900 dark:text-slate-100">{{ resource.title }}</h4>
+                            <p class="text-xs text-gray-500 dark:text-slate-400">{{ resource.resource_type|capitalize }}</p>
+                        </div>
+                        <span class="text-xs font-bold text-teal-600 dark:text-teal-300">Abrir</span>
+                    </div>
+                </a>
+                {% else %}
+                <div class="block rounded-lg border border-gray-100 bg-gray-50 px-3 py-2.5 dark:bg-slate-800 dark:border-slate-700">
+                    <div class="flex items-center justify-between gap-2">
+                        <div>
+                            <h4 class="text-sm font-bold text-gray-900 dark:text-slate-100">{{ resource.title }}</h4>
+                            <p class="text-xs text-gray-500 dark:text-slate-400">{{ resource.resource_type|capitalize }}</p>
+                        </div>
+                        <span class="text-xs font-semibold text-gray-400 dark:text-slate-500">Sin URL</span>
+                    </div>
+                </div>
+                {% endif %}
             {% else %}
             <p class="text-sm text-gray-400 dark:text-slate-500">Aun no hay recursos vinculados a este curso.</p>
             {% endfor %}
